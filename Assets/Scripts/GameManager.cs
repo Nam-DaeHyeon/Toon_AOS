@@ -5,6 +5,7 @@ using UnityEngine;
 public class GameManager : MonoBehaviour
 {
     public static string USER_NICKNAME = "MyName";
+    public static string USER_CHARACTER = "BEAR";
 
     public static GameManager s_instance;
     public static GameManager instance
@@ -42,5 +43,8 @@ public class GameManager : MonoBehaviour
         //GET PLAYERPREFS "NICKNAME"
         USER_NICKNAME = (PlayerPrefs.HasKey("NICKNAME")) ? PlayerPrefs.GetString("NICKNAME") : "MyName";
 
+        //GET PLAYERPREFS "CHARACTER"
+        if (!PlayerPrefs.HasKey("CHARACTER")) PlayerPrefs.SetString("CHARACTER", "BEAR");
+        USER_CHARACTER = PlayerPrefs.GetString("CHARACTER");
     }
 }

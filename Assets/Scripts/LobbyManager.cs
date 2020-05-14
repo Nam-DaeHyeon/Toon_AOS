@@ -14,6 +14,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks
 
     //유니티 컴포넌트
     [SerializeField] InputField _nickNameInputField;
+    [SerializeField] Text _characterText;
     [SerializeField] Button _joinButton;
     [SerializeField] Text _gameLogText;
 
@@ -31,8 +32,9 @@ public class LobbyManager : MonoBehaviourPunCallbacks
 
     private void Start()
     {
-        //UI 업데이트 : 유저 닉네임 로드
+        //UI 업데이트 : 유저 닉네임 로드 & 캐릭터(클래스) 설정
         _nickNameInputField.text = GameManager.USER_NICKNAME;
+        _characterText.text = GameManager.USER_CHARACTER;
     }
 
     //마스터 서버에 접속이 성공했다.
@@ -101,5 +103,13 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     {
         GameManager.USER_NICKNAME = _nickNameInputField.text;
         PlayerPrefs.SetString("NICKNAME", GameManager.USER_NICKNAME);
+    }
+
+    public void UI_Button_SetUpdate_Character(string keyvalue)
+    {
+        GameManager.USER_CHARACTER = keyvalue.ToUpper();
+        PlayerPrefs.SetString("CHARACTER", GameManager.USER_CHARACTER);
+
+        _characterText.text = GameManager.USER_CHARACTER;
     }
 }
