@@ -36,22 +36,23 @@ public partial class Player : MonoBehaviourPunCallbacks
 
     private void Start()
     {
+        Set_InitParameter();
+
         if (photonView.IsMine)
         {
-            Set_InitParameter();
-            m_ready = true;
-
             StartCoroutine(IE_PlayerController());
-
         }
         else
         {
             _mainCamera.gameObject.SetActive(false);
         }
-        
+
+        m_ready = true;
+
         //UI 설정
         photonView.RPC("CallbackRPC_SyncNickname", RpcTarget.All, photonView.Owner.NickName);
-        photonView.RPC("CallbackRPC_SyncHPBar", RpcTarget.All);
+        //photonView.RPC("CallbackRPC_SyncHPBar", RpcTarget.All);
+        _imgHPBar.fillAmount = _currHP / _maxHP;
     }
     
     private void Set_InitParameter()
@@ -133,5 +134,17 @@ public partial class Player : MonoBehaviourPunCallbacks
     private void CallbackRPC_SyncHPBar()
     {
         _imgHPBar.fillAmount = _currHP / _maxHP;
+    }
+
+    private void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if(stream.IsWriting)
+        {
+            stream.SendNext(this._imgHPBar.fillAmount);
+        }
+        else
+        {
+            this._imgHPBar.fillAmount = (float)stream.ReceiveNext();
+        }
     }
 }

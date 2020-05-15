@@ -39,6 +39,7 @@ MonoBehaviour:
   - Set_InitParameter
   - Callback_SyncNickname
   - CallbackRPC_SyncNickname
+  - CallbackRPC_SyncHPBar
   DisableAutoOpenWizard: 1
   ShowSettings: 0
   DevRegionSetOnce: 1
