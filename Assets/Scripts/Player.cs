@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
 using Photon.Realtime;
+using UnityEngine.UI;
+using TMPro;
 
-public partial class Player : MonoBehaviour
+public partial class Player : MonoBehaviourPunCallbacks
 {
     /// <summary> 게임에 온전히 로드된 경우 활성화 : 이외 공격 무효 </summary>
     bool m_ready = false;
@@ -27,23 +29,31 @@ public partial class Player : MonoBehaviour
 
     #region 컴포넌트
     [SerializeField] Camera _mainCamera;
+    [SerializeField] TextMeshPro _textNickName;
+    [SerializeField] Image _imgHPBar;
     Animator _animator;
     #endregion
 
-    private void Awake()
-    {
-        if (_mainCamera == null) _mainCamera = transform.GetComponentInChildren<Camera>();
-        if (_animator == null) _animator = transform.GetComponentInChildren<Animator>();
-    }
-
     private void Start()
     {
-        Set_InitParameter();
-        m_ready = true;
+        if (photonView.IsMine)
+        {
+            Set_InitParameter();
+            m_ready = true;
 
-        StartCoroutine(IE_PlayerController());
+            StartCoroutine(IE_PlayerController());
+
+        }
+        else
+        {
+            _mainCamera.gameObject.SetActive(false);
+        }
+        
+        //UI 설정
+        photonView.RPC("CallbackRPC_SyncNickname", RpcTarget.All, photonView.Owner.NickName);
+        photonView.RPC("CallbackRPC_SyncHPBar", RpcTarget.All);
     }
-
+    
     private void Set_InitParameter()
     {
         //캐릭터에 따른 능력치 설정
@@ -109,5 +119,19 @@ public partial class Player : MonoBehaviour
     public void SetAnimatorComponent()
     {
         if (_animator == null) _animator = transform.GetComponentInChildren<Animator>();
+    }
+
+    /// <summary> RPC 동기화 - 플레이어 닉네임 </summary>
+    [PunRPC]
+    private void CallbackRPC_SyncNickname(string value)
+    {
+        _textNickName.text = value;
+    }
+
+    /// <summary> RPC 동기화 - UI HP바 </summary>
+    [PunRPC]
+    private void CallbackRPC_SyncHPBar()
+    {
+        _imgHPBar.fillAmount = _currHP / _maxHP;
     }
 }

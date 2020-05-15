@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
+#if UNITY_EDITOR
 public class ed_Manager : Editor
 {
     [MenuItem("Custom/Delete All PlayerPrefs")]
@@ -12,3 +13,4 @@ public class ed_Manager : Editor
         PlayerPrefs.DeleteAll();
     }
 }
+#endif

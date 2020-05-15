@@ -42,6 +42,7 @@ public class GameManager : MonoBehaviour
 
         //GET PLAYERPREFS "NICKNAME"
         USER_NICKNAME = (PlayerPrefs.HasKey("NICKNAME")) ? PlayerPrefs.GetString("NICKNAME") : "MyName";
+        if (!PlayerPrefs.HasKey("NICKNAME")) PlayerPrefs.SetString("NICKNAME", "MyName");
 
         //GET PLAYERPREFS "CHARACTER"
         if (!PlayerPrefs.HasKey("CHARACTER")) PlayerPrefs.SetString("CHARACTER", "BEAR");

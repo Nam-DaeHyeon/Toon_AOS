@@ -34,6 +34,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     {
         //UI 업데이트 : 유저 닉네임 로드 & 캐릭터(클래스) 설정
         _nickNameInputField.text = GameManager.USER_NICKNAME;
+        //_nickNameInputField.text = PhotonNetwork.NickName;
         _characterText.text = GameManager.USER_CHARACTER;
     }
 
@@ -64,16 +65,20 @@ public class LobbyManager : MonoBehaviourPunCallbacks
 
         _gameLogText.text = "There is no empty room. Creating new room";
 
+        PhotonNetwork.NickName = GameManager.USER_NICKNAME;
+
         //현재(20.05.14) 작업 중에선 방 제목을 보고 플레이어가 입장하는 것이 아니기 때문에 방제목을 NULL로 설정한다.
         PhotonNetwork.CreateRoom(roomName: null, new RoomOptions { MaxPlayers = 2 });
     }
 
     public override void OnJoinedRoom()
     {
-        base.OnJoinedRoom();
+        //base.OnJoinedRoom();
 
         //동기화가 아닌 독자적인 씬을 불러오는 방식이다. 때문에 멀티에선 사용해선 안된다.
         //SceneManager.LoadScene("Main");
+
+        PhotonNetwork.NickName = GameManager.USER_NICKNAME;
 
         _gameLogText.text = "Connected with Room.";
         PhotonNetwork.LoadLevel("Main");
@@ -102,6 +107,8 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     public void SetUpdate_NickName()
     {
         GameManager.USER_NICKNAME = _nickNameInputField.text;
+        //PhotonNetwork.NickName = _nickNameInputField.text;
+        //PlayerPrefs.SetString("NICKNAME", PhotonNetwork.NickName);
         PlayerPrefs.SetString("NICKNAME", GameManager.USER_NICKNAME);
     }
 
