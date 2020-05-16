@@ -40,6 +40,12 @@ MonoBehaviour:
   - Callback_SyncNickname
   - CallbackRPC_SyncNickname
   - CallbackRPC_SyncHPBar
+  - CallbackRPC_HPBar
+  - CallbackRPC_SetCharacterParent
+  - CallbackRPC_CreateCharacter
+  - CallbackRPC_SetParentCharacter
+  - CallbackRPC_SyncChildren
+  - SetAnimatorComponent
   DisableAutoOpenWizard: 1
   ShowSettings: 0
   DevRegionSetOnce: 1

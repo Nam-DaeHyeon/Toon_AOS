@@ -6,7 +6,15 @@ using Photon.Realtime;
 using UnityEngine.UI;
 using TMPro;
 
-public partial class Player : MonoBehaviourPunCallbacks
+public enum ATK_TARGET
+{
+    ENEMY,
+    ENEMY_NONTG,
+    ALIAS,
+    ALIAS_NONTG
+}
+
+public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
 {
     /// <summary> 게임에 온전히 로드된 경우 활성화 : 이외 공격 무효 </summary>
     bool m_ready = false;
@@ -15,16 +23,21 @@ public partial class Player : MonoBehaviourPunCallbacks
     Vector3 _targetPos;
 
     #region 플레이어 능력치 파라미터
-    int _currHP = 0;
-    int _maxHP = 100;
+    float _currHP = 0;
+    float _maxHP = 100;
+    float _attackDamage = 20f;
+    float _attackDistance = 2.5f;
 
     float _speed = 5f;
     #endregion
 
     #region 플레이어 행동 트리거 및 변수
-    bool isMove = false;
+    bool isMove = false;    //움직이고 있는 상태
     float distance = 0f;
     Vector3 dir;
+
+    bool atkToggle = false;    //공격 대상 지정 상태
+    Player atkTargetPlayer = null;  //공격 대상
     #endregion
 
     #region 컴포넌트
@@ -41,6 +54,7 @@ public partial class Player : MonoBehaviourPunCallbacks
         if (photonView.IsMine)
         {
             StartCoroutine(IE_PlayerController());
+            StartCoroutine(IE_PlayerInputKeyManager());
         }
         else
         {
@@ -50,11 +64,12 @@ public partial class Player : MonoBehaviourPunCallbacks
         m_ready = true;
 
         //UI 설정
-        photonView.RPC("CallbackRPC_SyncNickname", RpcTarget.All, photonView.Owner.NickName);
+        //photonView.RPC("CallbackRPC_SyncNickname", RpcTarget.All, photonView.Owner.NickName);
         //photonView.RPC("CallbackRPC_SyncHPBar", RpcTarget.All);
+        _textNickName.text = photonView.Owner.NickName;
         _imgHPBar.fillAmount = _currHP / _maxHP;
     }
-    
+
     private void Set_InitParameter()
     {
         //캐릭터에 따른 능력치 설정
@@ -66,43 +81,96 @@ public partial class Player : MonoBehaviourPunCallbacks
         isMove = false;
         distance = 0f;
         dir = Vector3.zero;
+        atkToggle = false;
+        atkTargetPlayer = null;
     }
 
     IEnumerator IE_PlayerController()
     {
-        while(_currHP > 0)
+        while (_currHP > 0)
         {
-            //우클릭한 지면 좌표로 이동
-            if(Input.GetMouseButtonDown(1))
+            if (atkTargetPlayer == null)
             {
-                //지면 확인
-                Ray ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
-                //Ray ray = _mainCamera.ViewportPointToRay(Input.mousePosition);
-                RaycastHit hit;
-                if (Physics.Raycast(ray, out hit))
+                #region 이동관련 : 우클릭한 지면 좌표로 이동
+                if (Input.GetMouseButtonDown(1))
                 {
-                    if (hit.transform.tag.Equals("Ground"))
+                    //지면 확인
+                    Ray ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
+                    RaycastHit hit;
+                    if (Physics.Raycast(ray, out hit))
                     {
-                        _targetPos = hit.point;
-                        isMove = true;
+                        if (hit.transform.tag.Equals("Ground"))
+                        {
+                            //애니메이션
+                            if (!isMove) _animator.SetTrigger("MOVE");
 
-                        //방향벡터 갱신
-                        dir = _targetPos - transform.position;
-                        dir.Normalize();
-                        
-                        //회전
-                        _animator.transform.LookAt(new Vector3(_targetPos.x, transform.position.y, _targetPos.z));
+                            _targetPos = hit.point;
+                            isMove = true;
 
-                        //애니메이션
+                            //방향벡터 갱신
+                            dir = _targetPos - transform.position;
+                            dir.Normalize();
+
+                            //회전
+                            _animator.transform.LookAt(new Vector3(_targetPos.x, transform.position.y, _targetPos.z));
+
+                        }
                     }
                 }
-            }
+                #endregion
 
-            //입력 좌표에 도달했는가
-            if(isMove)
+                #region 이동관련 : 입력 좌표에 도달했는가
+                if (isMove)
+                {
+                    distance = Vector3.Distance(transform.position, _targetPos);
+                    if (distance < 0.1f)
+                    {
+                        isMove = false;
+                        _animator.SetTrigger("IDLE");
+                    }
+                    else
+                    {
+                        transform.Translate(dir * _speed * Time.deltaTime, Space.World);
+                        //transform.position = Vector3.Lerp(transform.position, _targetPos, Time.deltaTime);
+                    }
+                }
+                #endregion
+
+                #region 타겟팅관련 : 다른 플레이어를 타겟팅
+                if (atkToggle)
+                {
+                    if (Input.GetMouseButtonDown(0))
+                    {
+                        Ray ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
+                        RaycastHit hit;
+                        if (Physics.Raycast(ray, out hit, LayerMask.NameToLayer("Player")))
+                        {
+                            //애니메이션
+                            if (!isMove) _animator.SetTrigger("MOVE");
+
+                            isMove = true;
+
+                            //방향벡터 갱신
+                            dir = _targetPos - transform.position;
+                            dir.Normalize();
+
+                            //회전
+                            _animator.transform.LookAt(new Vector3(_targetPos.x, transform.position.y, _targetPos.z));
+
+
+                        }
+                    }
+                }
+                #endregion
+            }
+            else
             {
                 distance = Vector3.Distance(transform.position, _targetPos);
-                if (distance < 0.1f) isMove = false;
+                if (distance < _attackDistance)
+                {
+                    isMove = false;
+                    _animator.SetInteger("ATTACK", 0);
+                }
                 else
                 {
                     transform.Translate(dir * _speed * Time.deltaTime, Space.World);
@@ -114,37 +182,78 @@ public partial class Player : MonoBehaviourPunCallbacks
         }
     }
 
+    IEnumerator IE_PlayerInputKeyManager()
+    {
+        while (_currHP > 0)
+        {
+            if (Input.GetKeyDown(KeyCode.A))
+            {
+                atkToggle = !atkToggle;
+            }
+
+            yield return null;
+        }
+    }
+
+    public void SetAnimatorComponent(Animator animator)
+    {
+        if (animator == null) _animator = GetComponentInChildren<Animator>();
+        else _animator = animator;
+    }
+
     /// <summary>
-    /// 애니메이터 컴포넌트를 설정합니다.
+    /// 애니메이터 컴포넌트 널 체크
     /// </summary>
-    public void SetAnimatorComponent()
+    public bool GetNullCheck_Animator()
     {
-        if (_animator == null) _animator = transform.GetComponentInChildren<Animator>();
+        return _animator == null;
     }
 
-    /// <summary> RPC 동기화 - 플레이어 닉네임 </summary>
-    [PunRPC]
-    private void CallbackRPC_SyncNickname(string value)
+    /// <summary>
+    /// 플레이어가 피격 당했습니다.
+    /// </summary>
+    /// <param name="id">피격당한 플레이어 포톤 유저 ID</param>
+    /// <param name="damage">피격 데미지</param>
+    //public void TakeDamage(string id, int damage)
+    public void TakeDamage(int damage)
     {
-        _textNickName.text = value;
-    }
+        //if (!photonView.Owner.UserId.Equals(id)) return;
+        //if (this.GetInstanceID() != id) return;
 
-    /// <summary> RPC 동기화 - UI HP바 </summary>
-    [PunRPC]
-    private void CallbackRPC_SyncHPBar()
-    {
+        if (_currHP < 0) return;
+
+        _currHP -= damage;
         _imgHPBar.fillAmount = _currHP / _maxHP;
     }
 
-    private void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    void IPunObservable.OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
-        if(stream.IsWriting)
+        if (stream.IsWriting)
         {
+            stream.SendNext(GameManager.USER_NICKNAME);
             stream.SendNext(this._imgHPBar.fillAmount);
+
         }
         else
         {
+            _textNickName.text = (string)stream.ReceiveNext();
             this._imgHPBar.fillAmount = (float)stream.ReceiveNext();
         }
+    }
+
+    private void OnMouseEnter()
+    {
+        if (!photonView.IsMine)
+        {
+            _animator.GetComponent<Outline>().OutlineColor = Color.red;
+        }
+        else _animator.GetComponent<Outline>().OutlineColor = Color.white;
+        _animator.GetComponent<Outline>().enabled = true;
+    }
+
+    private void OnMouseExit()
+    {
+        _animator.GetComponent<Outline>().enabled = false;
+
     }
 }

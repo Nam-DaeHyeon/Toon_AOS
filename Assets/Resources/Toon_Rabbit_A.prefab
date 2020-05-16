@@ -1462,6 +1462,8 @@ GameObject:
   - component: {fileID: 7880994554269836291}
   - component: {fileID: 8543898331262062131}
   - component: {fileID: 6818160482239092377}
+  - component: {fileID: -8620711697413099979}
+  - component: {fileID: 5583824387288252815}
   m_Layer: 0
   m_Name: Toon_Rabbit_A
   m_TagString: Untagged
@@ -1495,7 +1497,7 @@ Animator:
   m_GameObject: {fileID: 7880994554279277201}
   m_Enabled: 1
   m_Avatar: {fileID: 9000000, guid: 125d817501356234bae446f02f600657, type: 3}
-  m_Controller: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: e60acc7f8adf1554eb24877f6c63f8ee, type: 2}
   m_CullingMode: 1
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -1523,6 +1525,7 @@ MonoBehaviour:
   OwnershipTransfer: 0
   ObservedComponents:
   - {fileID: 6818160482239092377}
+  - {fileID: -8620711697413099979}
   viewIdField: 0
   InstantiationId: 0
   isRuntimeInstantiated: 0
@@ -1541,6 +1544,54 @@ MonoBehaviour:
   m_SynchronizePosition: 1
   m_SynchronizeRotation: 1
   m_SynchronizeScale: 0
+--- !u!114 &-8620711697413099979
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7880994554279277201}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b8c4a61274f60b4ea5fb4299cfdbf14, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowLayerWeightsInspector: 1
+  ShowParameterInspector: 1
+  m_SynchronizeParameters:
+  - Type: 9
+    SynchronizeType: 1
+    Name: IDLE
+  - Type: 9
+    SynchronizeType: 1
+    Name: MOVE
+  - Type: 3
+    SynchronizeType: 1
+    Name: ATTACK
+  - Type: 9
+    SynchronizeType: 1
+    Name: HIT
+  m_SynchronizeLayers:
+  - SynchronizeType: 1
+    LayerIndex: 0
+--- !u!114 &5583824387288252815
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7880994554279277201}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5fea29bb7c508c244a1f805a5fd3fc4d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  outlineMode: 0
+  outlineColor: {r: 1, g: 1, b: 1, a: 1}
+  outlineWidth: 5
+  precomputeOutline: 0
+  bakeKeys: []
+  bakeValues: []
 --- !u!1 &7880994554279281429
 GameObject:
   m_ObjectHideFlags: 0

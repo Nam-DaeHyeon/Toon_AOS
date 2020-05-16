@@ -68,7 +68,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks
         PhotonNetwork.NickName = GameManager.USER_NICKNAME;
 
         //현재(20.05.14) 작업 중에선 방 제목을 보고 플레이어가 입장하는 것이 아니기 때문에 방제목을 NULL로 설정한다.
-        PhotonNetwork.CreateRoom(roomName: null, new RoomOptions { MaxPlayers = 2 });
+        PhotonNetwork.CreateRoom(roomName: null, new RoomOptions { MaxPlayers = 4 });
     }
 
     public override void OnJoinedRoom()
