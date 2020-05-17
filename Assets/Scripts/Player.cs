@@ -102,8 +102,11 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
                         if (hit.transform.tag.Equals("Ground"))
                         {
                             //애니메이션
-                            if (!isMove) _animator.SetTrigger("MOVE");
-
+                            if (!isMove)
+                            {
+                                //_animator.SetTrigger("MOVE");
+                                photonView.RPC("CallbackRPC_AnimatorTrigger", RpcTarget.All, "MOVE");
+                            }
                             _targetPos = hit.point;
                             isMove = true;
 
@@ -126,7 +129,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
                     if (distance < 0.1f)
                     {
                         isMove = false;
-                        _animator.SetTrigger("IDLE");
+                        //_animator.SetTrigger("IDLE");
+                        photonView.RPC("CallbackRPC_AnimatorTrigger", RpcTarget.All, "IDLE");
                     }
                     else
                     {
@@ -146,8 +150,11 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
                         if (Physics.Raycast(ray, out hit, LayerMask.NameToLayer("Player")))
                         {
                             //애니메이션
-                            if (!isMove) _animator.SetTrigger("MOVE");
-
+                            if (!isMove)
+                            {
+                                //_animator.SetTrigger("MOVE");
+                                photonView.RPC("CallbackRPC_AnimatorTrigger", RpcTarget.All, "MOVE");
+                            }
                             isMove = true;
 
                             //방향벡터 갱신
@@ -195,10 +202,16 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         }
     }
 
+    /// <summary>
+    /// 애니메이터 컴포넌트 등록
+    /// </summary>
     public void SetAnimatorComponent(Animator animator)
     {
         if (animator == null) _animator = GetComponentInChildren<Animator>();
         else _animator = animator;
+
+        //애니메이션 동기화를 위해 옵저버 등록
+        if(photonView.IsMine) photonView.ObservedComponents.Add(animator.GetComponent<PhotonAnimatorView>());
     }
 
     /// <summary>
@@ -207,6 +220,12 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     public bool GetNullCheck_Animator()
     {
         return _animator == null;
+    }
+
+    [PunRPC]
+    private void CallbackRPC_AnimatorTrigger(string animTriggerName)
+    {
+        _animator.SetTrigger(animTriggerName);
     }
 
     /// <summary>
