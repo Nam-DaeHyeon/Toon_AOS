@@ -47,6 +47,9 @@ MonoBehaviour:
   - CallbackRPC_SyncChildren
   - SetAnimatorComponent
   - CallbackRPC_AnimatorTrigger
+  - CallbackRPC_AnimatorInteger
+  - CallbackRPC_SetInitParameter
+  - CallbackRPC_SyncHP
   DisableAutoOpenWizard: 1
   ShowSettings: 0
   DevRegionSetOnce: 1

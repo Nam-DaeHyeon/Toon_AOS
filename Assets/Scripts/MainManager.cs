@@ -7,7 +7,6 @@ public class MainManager : MonoBehaviourPunCallbacks
 {
     GameObject playerObj;
     GameObject childChar;
-
     public static MainManager s_instance;
     public static MainManager instance
     {
@@ -27,9 +26,11 @@ public class MainManager : MonoBehaviourPunCallbacks
         }
     }
 
+    [SerializeField] GameObject cursorObjSample;
+
     [Header("Prefabs")]
     [SerializeField] GameObject _playerPrefab;
-    
+
     private void Awake()
     {
         if (s_instance == null)
@@ -60,8 +61,9 @@ public class MainManager : MonoBehaviourPunCallbacks
         playerObj = PhotonNetwork.Instantiate(_playerPrefab.name,
                                                          new Vector3(randX, 0, randZ),
                                                          Quaternion.Euler(0, 0, 0));
-        
-        photonView.RPC("CallbackRPC_CreateCharacter", RpcTarget.AllBuffered, playerObj.GetPhotonView().ViewID);
+        playerObj.GetComponent<Player>()._cursorObj = cursorObjSample;
+
+        photonView.RPC("CallbackRPC_CreateCharacter", RpcTarget.AllBuffered);
         
         photonView.RPC("CallbackRPC_SetParentCharacter", RpcTarget.AllBuffered);
     }
@@ -70,7 +72,7 @@ public class MainManager : MonoBehaviourPunCallbacks
     /// RPC 동기화 : 캐릭터 오브젝트 생성
     /// </summary>
     [PunRPC]
-    private void CallbackRPC_CreateCharacter(int viewId)
+    private void CallbackRPC_CreateCharacter()
     {
         //중복 생성 차단
         if (!playerObj.GetComponent<Player>().GetNullCheck_Animator()) return;

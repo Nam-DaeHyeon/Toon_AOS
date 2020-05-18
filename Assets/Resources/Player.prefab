@@ -493,6 +493,7 @@ MonoBehaviour:
   _mainCamera: {fileID: 8173063325897746561}
   _textNickName: {fileID: 4301647497708494550}
   _imgHPBar: {fileID: 4185855509174014001}
+  _cursorObj: {fileID: 0}
 --- !u!114 &4855263276779307934
 MonoBehaviour:
   m_ObjectHideFlags: 0
