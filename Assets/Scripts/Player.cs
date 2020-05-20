@@ -40,6 +40,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     float _attackDistance = 2.5f;
 
     float _speed = 5f;
+
+    bool _onHide = false;   //은신상태 | 수풀에 숨어있는 상태
     #endregion
 
     #region 플레이어 행동 트리거 및 변수
@@ -50,6 +52,9 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     bool atkToggle = false;    //공격 대상 지정 상태
     Player atkTargetPlayer = null;  //공격 대상
     float atkAnimTime = 1.042f;    //공격 애니메이션 재생 시간
+
+    Shader baseShader;
+    Shader alphaShader;
     #endregion
 
     #region 컴포넌트
@@ -61,6 +66,12 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     
     //커서 오브젝트 샘플
     public GameObject _cursorObj;
+
+    private void Awake()
+    {
+        baseShader = Shader.Find("Unlit/CellShader");
+        alphaShader = Shader.Find("Unlit/CellShaderAlpha");
+    }
 
     private void Start()
     {
@@ -104,6 +115,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         atkToggle = false;
         atkTargetPlayer = null;
 
+        _onHide = false;
+
         if(photonView.IsMine) _cursorObj.SetActive(false);
     }
 
@@ -143,7 +156,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
                 if (isMove)
                 {
                     distance = Vector3.Distance(transform.position, _targetPos);
-                    if (distance < 0.1f)
+                    if (distance < 0.15f)
                     {
                         isMove = false;
                         //_animator.SetTrigger("IDLE");
@@ -151,8 +164,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
                     }
                     else
                     {
+                        //Correction_DirectionVector();
                         transform.Translate(dir * _speed * Time.deltaTime, Space.World);
-                        //transform.position = Vector3.Lerp(transform.position, _targetPos, Time.deltaTime);
                     }
                 }
                 #endregion
@@ -170,9 +183,6 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
                 //이외에 추적
                 else
                 {
-                    dir = atkTargetPlayer.transform.position - transform.position;
-                    dir.Normalize();
-
                     //애니메이션
                     if (!isMove)
                     {
@@ -183,8 +193,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
 
                     _animator.transform.LookAt(new Vector3(atkTargetPlayer.transform.position.x, transform.position.y, atkTargetPlayer.transform.position.z));
 
+                    //Correction_DirectionVector();
                     transform.Translate(dir * _speed * Time.deltaTime, Space.World);
-                    //transform.position = Vector3.Lerp(transform.position, _targetPos, Time.deltaTime);
                 }
             }
 
@@ -306,7 +316,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         //지면 확인
         Ray ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
         RaycastHit hit;
-        if (Physics.Raycast(ray, out hit))
+        if (Physics.Raycast(ray, out hit, 100, LayerMask.GetMask("Default")))
         {
             if (hit.transform.tag.Equals("Ground"))
             {
@@ -353,6 +363,37 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     public bool GetNullCheck_Animator()
     {
         return _animator == null;
+    }
+
+    /// <summary>
+    /// 경사면 방향벡터 보정
+    /// </summary>
+    private void Correction_DirectionVector()
+    {
+        //dir = 보정.. 외적벡터
+        Ray ray = new Ray(new Vector3(transform.position.x, transform.position.y + 1.3f, transform.position.z), dir);
+        RaycastHit hit;
+        if (Physics.Raycast(ray, out hit, 0.6f, LayerMask.GetMask("Default")))
+        {
+            Debug.Log(hit.transform.name + " Input : " + dir);
+            var T = Vector3.Cross(hit.normal, dir);
+            var Out = Vector3.Cross(T, hit.normal);
+            dir = Out;
+            Debug.Log(hit.transform.name + " Output : " + dir);
+        }
+        else
+        {
+            if(atkTargetPlayer == null)
+            {
+                dir = _targetPos - transform.position;
+                dir.Normalize();
+            }
+            else
+            {
+                dir = atkTargetPlayer.transform.position - transform.position;
+                dir.Normalize();
+            }
+        }
     }
 
     /// <summary>
@@ -441,5 +482,27 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     {
         _animator.GetComponent<Outline>().enabled = false;
 
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (!photonView.IsMine) return;
+
+        if(other.gameObject.layer.Equals(LayerMask.NameToLayer("Grass")))
+        {
+            _animator.transform.GetChild(0).GetComponent<SkinnedMeshRenderer>().sharedMaterial.shader = alphaShader;
+            _onHide = true;
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (!photonView.IsMine) return;
+
+        if (other.gameObject.layer.Equals(LayerMask.NameToLayer("Grass")))
+        {
+            _animator.transform.GetChild(0).GetComponent<SkinnedMeshRenderer>().sharedMaterial.shader = baseShader;
+            _onHide = false;
+        }
     }
 }

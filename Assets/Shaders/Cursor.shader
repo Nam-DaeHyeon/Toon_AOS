@@ -3,6 +3,7 @@
 Shader "Unlit/Cursor"
 {
 	/*
+	//Texture + Alpha
 	Properties{
 		_Color("Main Color (A=Opacity)", Color) = (1,1,1,1)
 		_MainTex("Base (A=Opacity)", 2D) = ""

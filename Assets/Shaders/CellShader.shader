@@ -12,7 +12,8 @@
 	}
 		SubShader
 	{
-		Tags { "RenderType" = "Opaque" }
+		//Tags { "RenderType" = "Opaque" }
+		Tags { "RenderType" = "Transparent" }
 
 		cull front    //! 1Pass는 앞면을 그리지 않는다.
 		Pass
@@ -87,9 +88,11 @@
 
 		void surf(Input IN, inout SurfaceOutputCustom o)
 		{
+			//Original
 			float4 fMainTex = tex2D(_MainTex, IN.uv_MainTex);
 			o.Albedo = fMainTex.rgb;
-			o.Alpha = 1.0f;
+			//o.Alpha = 1.0f;
+			o.Alpha = _Color.a;
 
 			float4 fBandLUT = tex2D(_Band_Tex, IN.uv_Band_Tex);
 			o.BandLUT = fBandLUT.rgb;
@@ -130,7 +133,7 @@
 			fFinalColor.rgb = ((s.Albedo * _Color) + fSpecularColor) *
 								 fBandedDiffuse * _LightColor0.rgb * atten;
 			fFinalColor.a = s.Alpha;
-
+			
 			return fFinalColor;
 		}
 
