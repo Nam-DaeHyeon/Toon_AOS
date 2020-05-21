@@ -23,13 +23,22 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
                 _skillSlots[3].SetInit_Skill(_skillSlots[3].gameObject.AddComponent<sk_Bear04_Frenzy>());
                 break;
             case "RABBIT":
-
+                _skillSlots[0].SetInit_Skill(_skillSlots[0].gameObject.AddComponent<sk_Rabbit01_IceArrow>());
+                _skillSlots[1].SetInit_Skill(_skillSlots[1].gameObject.AddComponent<sk_Rabbit02_Heal>());
+                _skillSlots[2].SetInit_Skill(_skillSlots[2].gameObject.AddComponent<sk_Rabbit03_Barrier>());
+                _skillSlots[3].SetInit_Skill(_skillSlots[3].gameObject.AddComponent<sk_Rabbit04_Blizard>());
                 break;
-            case "CHIPMONK":
-
+            case "CHIPMUNK":
+                _skillSlots[0].SetInit_Skill(_skillSlots[0].gameObject.AddComponent<sk_Chipmunk01_Stab>());
+                _skillSlots[1].SetInit_Skill(_skillSlots[1].gameObject.AddComponent<sk_Chipmunk02_Hiding>());
+                _skillSlots[2].SetInit_Skill(_skillSlots[2].gameObject.AddComponent<sk_Chipmunk03_Leap>());
+                _skillSlots[3].SetInit_Skill(_skillSlots[3].gameObject.AddComponent<sk_Chipmunk04_GravityBoom>());
                 break;
             case "CAT":
-
+                _skillSlots[0].SetInit_Skill(_skillSlots[0].gameObject.AddComponent<sk_Cat01_PoisonArrow>());
+                _skillSlots[1].SetInit_Skill(_skillSlots[1].gameObject.AddComponent<sk_Cat02_Hallucination>());
+                _skillSlots[2].SetInit_Skill(_skillSlots[2].gameObject.AddComponent<sk_Cat03_Trap>());
+                _skillSlots[3].SetInit_Skill(_skillSlots[3].gameObject.AddComponent<sk_Cat04_Snipe>());
                 break;
         }
     }

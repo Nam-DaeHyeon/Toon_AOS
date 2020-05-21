@@ -107,6 +107,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         //캐릭터별 스킬 설정
         SetInit_MySkillSet();
         GetSkillPoint();
+        Hide_SkillDesc();
 
         //체력 초기화
         _currHP = _maxHP;
