@@ -42,6 +42,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     float _speed = 5f;
 
     bool _onHide = false;   //은신상태 | 수풀에 숨어있는 상태
+
+    public int _skillPoint { set; get; } = 0;
     #endregion
 
     #region 플레이어 행동 트리거 및 변수
@@ -101,6 +103,10 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     private void Set_InitParameter()
     {
         //캐릭터에 따른 능력치 설정
+        
+        //캐릭터별 스킬 설정
+        SetInit_MySkillSet();
+        GetSkillPoint();
 
         //체력 초기화
         _currHP = _maxHP;
@@ -117,7 +123,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
 
         _onHide = false;
 
-        if(photonView.IsMine) _cursorObj.SetActive(false);
+        if (photonView.IsMine) _cursorObj.SetActive(false);
     }
 
     /// <summary>
@@ -252,14 +258,37 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     /// <summary> 플레이어 키 입력을 받습니다. </summary>
     IEnumerator IE_PlayerInputKeyManager()
     {
+        bool ctrlPressed = false;
+
         while (_currHP > 0)
         {
+            //기본 공격 타겟팅
             if (Input.GetKeyDown(KeyCode.A))
             {
                 atkToggle = true;
                 StartCoroutine(IE_FollowTargetCursor());
             }
             else if (Input.GetKeyUp(KeyCode.A)) atkToggle = false;
+
+            //스킬 사용/레벨업 퀵버튼
+            if (!ctrlPressed)
+            {
+                if (Input.GetKeyDown(KeyCode.Q)) _skillSlots[0].SetUse_Skill(KeyCode.Q);
+                if (Input.GetKeyDown(KeyCode.W)) _skillSlots[1].SetUse_Skill(KeyCode.W);
+                if (Input.GetKeyDown(KeyCode.E)) _skillSlots[2].SetUse_Skill(KeyCode.E);
+                if (Input.GetKeyDown(KeyCode.R)) _skillSlots[3].SetUse_Skill(KeyCode.R);
+            }
+            else
+            {
+                if (Input.GetKeyDown(KeyCode.Q)) _skillSlots[0].UI_Button_SkillLevelUP();
+                if (Input.GetKeyDown(KeyCode.W)) _skillSlots[1].UI_Button_SkillLevelUP();
+                if (Input.GetKeyDown(KeyCode.E)) _skillSlots[2].UI_Button_SkillLevelUP();
+                if (Input.GetKeyDown(KeyCode.R)) _skillSlots[3].UI_Button_SkillLevelUP();
+            }
+
+            //CTRL 버튼 클릭
+            if (Input.GetKeyDown(KeyCode.LeftControl)) ctrlPressed = true;
+            else if (Input.GetKeyUp(KeyCode.LeftControl)) ctrlPressed = false;
 
             yield return null;
         }

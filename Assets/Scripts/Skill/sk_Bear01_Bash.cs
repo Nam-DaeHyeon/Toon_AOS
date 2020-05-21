@@ -2,5 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-//public partial class Player : MonoBehaviourPun
+public class sk_Bear01_Bash : Skill
+{
 
+}
