@@ -8,6 +8,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     [Header("Private UI")]
     [SerializeField] UI_SkillSlot[] _skillSlots;
     [SerializeField] UI_SkillDesc _skillDesc;
+    public Canvas UI_WorldCvs;
+
     #region 스킬 관련
     /// <summary>
     /// 캐릭터별 스킬을 등록합니다.

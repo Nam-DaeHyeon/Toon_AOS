@@ -50,6 +50,10 @@ MonoBehaviour:
   - CallbackRPC_AnimatorInteger
   - CallbackRPC_SetInitParameter
   - CallbackRPC_SyncHP
+  - CallbackRPC_Hide
+  - CallbackRPC_UnHide
+  - CallbackRPC_InnerPlayerAdd
+  - CallbackRPC_InnerPlayerRemove
   DisableAutoOpenWizard: 1
   ShowSettings: 0
   DevRegionSetOnce: 1

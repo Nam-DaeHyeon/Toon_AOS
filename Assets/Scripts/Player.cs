@@ -41,8 +41,6 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
 
     float _speed = 5f;
 
-    bool _onHide = false;   //은신상태 | 수풀에 숨어있는 상태
-
     public int _skillPoint { set; get; } = 0;
     #endregion
 
@@ -63,7 +61,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     [SerializeField] Camera _mainCamera;
     [SerializeField] TextMeshPro _textNickName;
     [SerializeField] Image _imgHPBar;
-    Animator _animator;
+    [HideInInspector] public Animator _animator { get; set; }
+    [HideInInspector] public SkinnedMeshRenderer _skinRender { get; set; }
     #endregion
     
     //커서 오브젝트 샘플
@@ -98,8 +97,21 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         //photonView.RPC("CallbackRPC_SyncHPBar", RpcTarget.All);
         _textNickName.text = photonView.Owner.NickName;
         _imgHPBar.fillAmount = _currHP / _maxHP;
+
+        StartCoroutine(IE_TEST_TargetingRender());
     }
     
+    IEnumerator IE_TEST_TargetingRender()
+    {
+        while(true)
+        {
+            if (Input.GetKeyDown(KeyCode.Escape)) yield break;
+            //LineRenderer
+
+            yield return null;
+        }
+    }
+
     private void Set_InitParameter()
     {
         //캐릭터에 따른 능력치 설정
@@ -122,7 +134,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         atkToggle = false;
         atkTargetPlayer = null;
 
-        _onHide = false;
+        //로컬 쉐이더 초기화
+        _skinRender.material.shader = baseShader;
 
         if (photonView.IsMine) _cursorObj.SetActive(false);
     }
@@ -381,9 +394,10 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     {
         if (animator == null) _animator = GetComponentInChildren<Animator>();
         else _animator = animator;
+        _skinRender = _animator.transform.GetComponentInChildren<SkinnedMeshRenderer>();
 
         //애니메이션 동기화를 위해 옵저버 등록
-        if(!photonView.ObservedComponents.Contains(animator.GetComponent<PhotonAnimatorView>()))
+        if (!photonView.ObservedComponents.Contains(animator.GetComponent<PhotonAnimatorView>()))
             photonView.ObservedComponents.Add(animator.GetComponent<PhotonAnimatorView>());
     }
 
@@ -497,42 +511,109 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
             this._imgHPBar.fillAmount = (float)stream.ReceiveNext();
         }
     }
+    
+    BushGrass _currBush;
+    /// <summary>
+    /// 부쉬에 들어갔습니다.
+    /// </summary>
+    public void GetIn_Bush(BushGrass bush)
+    {
+        _currBush = bush;
+        Set_HidingState();
+    }
 
+    /// <summary>
+    /// 부쉬에서 나왔습니다.
+    /// </summary>
+    public void GetOut_Bush(BushGrass bush)
+    {
+        Set_UnHidingState();
+        bush = null;
+    }
+
+    /// <summary>
+    /// 투명 상태로 돌입합니다.
+    /// </summary>
+    public void Set_HidingState()
+    {
+        photonView.RPC("CallbackRPC_Hide", RpcTarget.All);
+    }
+
+    /// <summary>
+    /// 투명 상태를 해제합니다.
+    /// </summary>
+    public void Set_UnHidingState()
+    {
+        photonView.RPC("CallbackRPC_UnHide", RpcTarget.All);
+    }
+
+    [PunRPC]
+    private void CallbackRPC_Hide()
+    {
+        //gameObject.layer = LayerMask.NameToLayer("HidePlayer");
+        _skinRender.material.shader = alphaShader;
+        //_skinRender.sharedMaterial.SetColor("_Color", new Color32(255, 255, 255, 110));
+
+        //뒤늦게 들어온 애가 있을 경우 전에 들어온 친구한테 렌더링되도록 업데이트.. allPlayers로 해결...
+        //수풀 안에선 서로를 타겟팅할 수 있도록, 밖에선 안이 타겟팅 못하게.. layerMask 설정 시도...
+        if (photonView.IsMine)
+        {
+            _skinRender.material.SetColor("_Color", new Color(1, 1, 1, 0.43f));
+        }
+        else
+        {
+            //같은 부쉬에 있는 플레이어의 경우 생략
+            for (int i = 0; i < MainManager.instance.allPlayers.Length; i++)
+            {
+                //자신(this) & NULL 예외처리
+                if (MainManager.instance.allPlayers[i].Equals(this)) continue;
+                if (_currBush == null) continue;
+
+                if (_currBush.Equals(MainManager.instance.allPlayers[i]._currBush))
+                {
+
+                }
+                else
+                {
+                    //부쉬 밖에 있는 Other's Camera : 자신의 캐릭터 비활성화 
+                    _skinRender.material.SetColor("_Color", new Color(1, 1, 1, 0));
+                    UI_WorldCvs.gameObject.SetActive(false);
+                }
+            }
+        }
+    }
+
+    [PunRPC]
+    private void CallbackRPC_UnHide()
+    {
+        //gameObject.layer = LayerMask.NameToLayer("Player");
+        _skinRender.material.shader = baseShader;
+    }
+    
     private void OnMouseEnter()
     {
+        //다른 플레이어에게 마우스를 올렸을 때
         if (!photonView.IsMine)
         {
+            //은신 상태일 때 윤곽선 생략
+            //if (_onHide) return;
+            if (_skinRender.material.GetColor("_Color").a == 0) return;
+            
             _animator.GetComponent<Outline>().OutlineColor = Color.red;
         }
+        //플레이어 자신에게 마우스를 올렸을때..
         else _animator.GetComponent<Outline>().OutlineColor = Color.white;
+
         _animator.GetComponent<Outline>().enabled = true;
+    }
+
+    private void OnMouseOver()
+    {
+        if (_skinRender.material.GetColor("_Color").a == 0) OnMouseExit();
     }
 
     private void OnMouseExit()
     {
         _animator.GetComponent<Outline>().enabled = false;
-
-    }
-
-    private void OnTriggerEnter(Collider other)
-    {
-        if (!photonView.IsMine) return;
-
-        if(other.gameObject.layer.Equals(LayerMask.NameToLayer("Grass")))
-        {
-            _animator.transform.GetChild(0).GetComponent<SkinnedMeshRenderer>().sharedMaterial.shader = alphaShader;
-            _onHide = true;
-        }
-    }
-
-    private void OnTriggerExit(Collider other)
-    {
-        if (!photonView.IsMine) return;
-
-        if (other.gameObject.layer.Equals(LayerMask.NameToLayer("Grass")))
-        {
-            _animator.transform.GetChild(0).GetComponent<SkinnedMeshRenderer>().sharedMaterial.shader = baseShader;
-            _onHide = false;
-        }
     }
 }

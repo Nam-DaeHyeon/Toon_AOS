@@ -5,6 +5,7 @@ using Photon.Pun;
 
 public class MainManager : MonoBehaviourPunCallbacks
 {
+    public Player[] allPlayers { get; set; }
     GameObject playerObj;
     GameObject childChar;
     public static MainManager s_instance;
@@ -109,7 +110,7 @@ public class MainManager : MonoBehaviourPunCallbacks
     [PunRPC]
     private void CallbackRPC_SetParentCharacter()
     {
-        Player[] allPlayers = FindObjectsOfType<Player>();
+        allPlayers = FindObjectsOfType<Player>();
         Animator[] allAnims = FindObjectsOfType<Animator>();
         for (int i = 0; i < allPlayers.Length; i++)
         {
