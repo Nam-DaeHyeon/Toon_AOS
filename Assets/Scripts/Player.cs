@@ -66,7 +66,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     #endregion
     
     //커서 오브젝트 샘플
-    public GameObject _cursorObj;
+    [HideInInspector] public GameObject _cursorObj;
 
     private void Awake()
     {
@@ -97,19 +97,6 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         //photonView.RPC("CallbackRPC_SyncHPBar", RpcTarget.All);
         _textNickName.text = photonView.Owner.NickName;
         _imgHPBar.fillAmount = _currHP / _maxHP;
-
-        StartCoroutine(IE_TEST_TargetingRender());
-    }
-    
-    IEnumerator IE_TEST_TargetingRender()
-    {
-        while(true)
-        {
-            if (Input.GetKeyDown(KeyCode.Escape)) yield break;
-            //LineRenderer
-
-            yield return null;
-        }
     }
 
     private void Set_InitParameter()
@@ -138,6 +125,9 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         _skinRender.material.shader = baseShader;
 
         if (photonView.IsMine) _cursorObj.SetActive(false);
+
+        //공격범위 가시화 오브젝트 초기화
+        Set_InitLineRendererObj();
     }
 
     /// <summary>
@@ -284,7 +274,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
             }
             else if (Input.GetKeyUp(KeyCode.A)) atkToggle = false;
 
-            //스킬 사용/레벨업 퀵버튼
+            //스킬 사용 퀵버튼
             if (!ctrlPressed)
             {
                 if (Input.GetKeyDown(KeyCode.Q)) _skillSlots[0].SetUse_Skill(KeyCode.Q);
@@ -292,6 +282,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
                 if (Input.GetKeyDown(KeyCode.E)) _skillSlots[2].SetUse_Skill(KeyCode.E);
                 if (Input.GetKeyDown(KeyCode.R)) _skillSlots[3].SetUse_Skill(KeyCode.R);
             }
+            //스킬 레벨업 퀵버튼
             else
             {
                 if (Input.GetKeyDown(KeyCode.Q)) _skillSlots[0].UI_Button_SkillLevelUP();

@@ -28,6 +28,7 @@ public class MainManager : MonoBehaviourPunCallbacks
     }
 
     [SerializeField] GameObject cursorObjSample;
+    public GameObject lineObjSample;
 
     [Header("Prefabs")]
     [SerializeField] GameObject _playerPrefab;
