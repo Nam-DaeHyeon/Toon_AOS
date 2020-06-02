@@ -79,7 +79,9 @@ public class UI_SkillSlot : MonoBehaviour
     private IEnumerator IE_Wait_KeyCodeUp(KeyCode inputCode)
     {
         //_player.SetParam_LineRender(5, 90);
-        _player.SetParam_LineRender(setSkill.skillDistance, setSkill.skillAngle);
+
+        if(setSkill.skillAngle != 0) _player.SetParam_LineRender(setSkill.skillDistance, setSkill.skillAngle);
+        else _player.SetParam_LineRender((int)(setSkill.skillMissileSpeed * setSkill.skillMissileExistTime), setSkill.skillAngle);
         _player.Draw_LineRender();
 
         yield return new WaitUntil(() => Input.GetKeyUp(inputCode));

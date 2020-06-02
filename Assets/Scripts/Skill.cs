@@ -15,7 +15,7 @@ public class Skill : MonoBehaviour
     public virtual bool directPop { set; get; } = true;
 
     /// <summary>
-    /// 스킬 사정거리 (기본값 5)
+    /// 스킬 사정거리 / 충돌체 크기 (기본값 5)
     /// </summary>
     public virtual int skillDistance { set; get; } = 5;
     /// <summary>
@@ -23,14 +23,22 @@ public class Skill : MonoBehaviour
     /// </summary>
     public virtual int skillAngle { set; get; } = 60;
 
-    #region 파라미터
+    /// <summary>
+    /// 투사체 스킬 속도 (기본값 0)
+    /// </summary>
+    public virtual float skillMissileSpeed { set; get; } = 0f;
+
+    /// <summary>
+    /// 투사체 스킬 잔존 시간 (기본 0)
+    /// </summary>
+    public virtual float skillMissileExistTime { set; get; } = 0f;
+        
     public int skillLevel { set; get; } = 0;
 
     public virtual int[] damage { set; get; }
     public virtual int[] mdamage { set; get; }
 
     public virtual float duration { set; get; } = 0f;
-    #endregion
 
     //컴포넌트
     public Sprite skillImage;
@@ -88,6 +96,7 @@ public class Skill : MonoBehaviour
     public int Get_EffectiveDamage()
     {
         if (skillLevel == 0) return 0;
+        if (damage == null) return 0;
         if (damage.Length < skillLevel) return 0;
         return damage[skillLevel - 1];
     }
@@ -95,6 +104,7 @@ public class Skill : MonoBehaviour
     public int Get_EffectiveMagicDamage()
     {
         if (skillLevel == 0) return 0;
+        if (mdamage == null) return 0;
         if (mdamage.Length < skillLevel) return 0;
         return mdamage[skillLevel - 1];
     }

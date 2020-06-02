@@ -6,7 +6,7 @@ using Photon.Pun;
 public partial class MainManager : MonoBehaviourPunCallbacks
 {
     [Header("Skill_ResourcesPool")]
-    public Dictionary<string, GameObject> skillPool = new Dictionary<string, GameObject>();
+    Dictionary<string, GameObject> skillPool = new Dictionary<string, GameObject>();
 
     /// <summary>
     /// 스킬 및 이펙트 리소스를 추가합니다.
@@ -88,6 +88,14 @@ public partial class MainManager : MonoBehaviourPunCallbacks
         photonView.RPC("CallbackRPC_ActiveParticle", RpcTarget.All, skillKeyName, skillTr.position, skillTr.eulerAngles);
     }
 
+    /// <summary>
+    /// 특정 스킬 이펙트 오브젝트를 반환합니다.
+    /// </summary>
+    public GameObject Get_SkillEffectObj(string skillKeyName)
+    {
+        return skillPool[skillKeyName];
+    }
+
     public void SetUnActive_SkillEffect(string skillKeyName)
     {
         photonView.RPC("CallbackRPC_UnActiveParticle", RpcTarget.All, skillKeyName);
@@ -126,6 +134,7 @@ public partial class MainManager : MonoBehaviourPunCallbacks
     [PunRPC]
     private void CallbackRPC_UnActiveParticle(string skillKeyName)
     {
+        //GameObject tempObj = skillPool[skillKeyName];
         GameObject tempObj = skillPool[skillKeyName];
         if (tempObj == null)
         {

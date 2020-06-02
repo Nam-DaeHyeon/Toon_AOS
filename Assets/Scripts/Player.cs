@@ -432,7 +432,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         //지면 확인
         Ray ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
         RaycastHit hit;
-        if (Physics.Raycast(ray, out hit, 100, LayerMask.GetMask("Default")))
+        if (Physics.Raycast(ray, out hit, 200, LayerMask.GetMask("Default")))
         {
             if (hit.transform.tag.Equals("Ground"))
             {
@@ -667,6 +667,25 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     public void UpdateParamAboutBuff(string paramName, int value, bool isBuff)
     {
         photonView.RPC("CallbackRPC_SyncParam", RpcTarget.All, paramName, value, isBuff);
+    }
+
+    /// <summary>
+    /// 다른 플레이어로 인해 버프/디버프를 받았습니다.
+    /// </summary>
+    /// <param name="paramName">ATTACKDAMAGE | DEFENCE | MDEFENCE | SPEED</param>
+    /// <param name="value">합 연산 수치</param>
+    /// <param name="isBuff">합 연산 여부. false 일경우, 차 연산을 진행한다.</param>
+    /// <param name="duration">버프/디버프 지속시간</param>
+    public void GetBuff_FromOthers(string paramName, int value, bool isBuff, float duration)
+    {
+        StartCoroutine(IE_BuffTimer(paramName, value, isBuff, duration));
+    }
+
+    private IEnumerator IE_BuffTimer(string paramName, int value, bool isBuff, float duration)
+    {
+        photonView.RPC("CallbackRPC_SyncParam", RpcTarget.All, paramName, value, isBuff);
+        yield return new WaitForSeconds(duration);
+        photonView.RPC("CallbackRPC_SyncParam", RpcTarget.All, paramName, value, !isBuff);
     }
 
     [PunRPC]

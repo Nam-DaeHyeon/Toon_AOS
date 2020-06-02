@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
 
-public partial class MainManager : MonoBehaviourPunCallbacks
+public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
 {
     public Player[] allPlayers { get; set; }
     GameObject playerObj;
@@ -146,5 +146,22 @@ public partial class MainManager : MonoBehaviourPunCallbacks
 
         //playerObj.GetComponent<Player>().SetAnimatorComponent();
         parentPlayer.SetAnimatorComponent(childAnim);
+    }
+
+    void IPunObservable.OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if (stream.IsWriting)
+        {
+            stream.SendNext(skillPool);
+
+        }
+        else
+        {
+            Dictionary<string, GameObject> tempPool = (Dictionary<string, GameObject>) stream.ReceiveNext();
+            foreach(var item in tempPool)
+            {
+                if(!skillPool.ContainsKey(item.Key)) skillPool.Add(item.Key, item.Value);
+            }
+        }
     }
 }
