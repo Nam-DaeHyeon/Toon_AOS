@@ -34,11 +34,30 @@ public class UI_SkillSlot : MonoBehaviour
     }
 
     /// <summary>
+    /// 등록된 스킬을 반환합니다.
+    /// </summary>
+    /// <returns></returns>
+    public Skill Get_Skill() { return setSkill; }
+
+    /// <summary>
+    /// 스킬에 사용되는 프로젝타일을 등록합니다.
+    /// </summary>
+    public void SetInit_Projectile(PlayerProjectile projectile)
+    {
+        setSkill.projectile = projectile;
+    }
+
+    /// <summary>
     /// 스킬을 사용합니다.
     /// </summary>
     public void SetUse_Skill(KeyCode inputCode)
     {
+        //스킬 레벨이 0 이하일 경우 리턴
+        if (setSkill.skillLevel <= 0) return;
+        //재사용 대기 시간 중이라면 리턴
         if (_leftTime > 0) return;
+        //다른 스킬이 발동 중이라면 리턴
+        if (_player.Get_CurrentState().Equals(PLAYER_STATE.CAST)) return;
 
         //스킬이 즉시 시전되는지에 따라 스킬을 발동합니다.
         if (setSkill.directPop) Callback_UseSkill();
@@ -47,6 +66,9 @@ public class UI_SkillSlot : MonoBehaviour
 
     private void Callback_UseSkill()
     {
+        //시선 재설정 및 행동 중지
+        _player.Callback_SetDir_OnKeyUp();
+
         //쿨타임 초기화
         StartCoroutine(IE_SlotTimer());
 
@@ -56,13 +78,13 @@ public class UI_SkillSlot : MonoBehaviour
 
     private IEnumerator IE_Wait_KeyCodeUp(KeyCode inputCode)
     {
-        _player.SetParam_LineRender(5, 90);
+        //_player.SetParam_LineRender(5, 90);
+        _player.SetParam_LineRender(setSkill.skillDistance, setSkill.skillAngle);
         _player.Draw_LineRender();
 
         yield return new WaitUntil(() => Input.GetKeyUp(inputCode));
 
         _player.DrawOff_LineRender();
-
         Callback_UseSkill();
     }
 

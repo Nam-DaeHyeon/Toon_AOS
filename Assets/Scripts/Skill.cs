@@ -5,24 +5,43 @@ using UnityEngine;
 public class Skill : MonoBehaviour
 {
     /// <summary>
-    /// 재사용 대기시간
+    /// 재사용 대기시간 (기본값 1)
     /// </summary>
     public virtual float coolTime { set; get; } = 1f;
 
     /// <summary>
-    /// 타겟팅이 필요없이 바로 시전되는 스킬 여부
+    /// 타겟팅이 필요없이 바로 시전되는 스킬 여부 (기본값 true)
     /// </summary>
     public virtual bool directPop { set; get; } = true;
 
+    /// <summary>
+    /// 스킬 사정거리 (기본값 5)
+    /// </summary>
+    public virtual int skillDistance { set; get; } = 5;
+    /// <summary>
+    /// 스킬 범위 (기본값 60 Radian)
+    /// </summary>
+    public virtual int skillAngle { set; get; } = 60;
+
+    #region 파라미터
     public int skillLevel { set; get; } = 0;
 
-    public virtual int damage { set; get; }
-    public virtual int mdamage { set; get; }
+    public virtual int[] damage { set; get; }
+    public virtual int[] mdamage { set; get; }
 
+    public virtual float duration { set; get; } = 0f;
+    #endregion
+
+    //컴포넌트
     public Sprite skillImage;
+    public PlayerProjectile projectile;
+
+    internal Player player;
+    internal Vector3 targetPos;
 
     private void Awake()
     {
+        player = GetComponentInParent<Player>();
         skillImage = Resources.Load<Sprite>("Skill/" + Get_SkillName());
     }
 
@@ -42,8 +61,41 @@ public class Skill : MonoBehaviour
         return 5;
     }
 
-    public virtual void Use_Skill()
+    /// <summary>
+    /// 스킬을 사용한 플레이어의 좌표를 기준으로 스킬을 발동합니다
+    /// </summary>
+    public void Use_Skill()
     {
+        this.targetPos = player.transform.position;
 
+        if(player.runningSkillRoutine != null) StopCoroutine(player.runningSkillRoutine);
+        player.runningSkillRoutine = StartCoroutine(IE_SkillProcess());
+    }
+    
+    /// <summary>
+    /// 기본값, 플레이어 위치에서 1회성 ON/OFF
+    /// </summary>
+    public virtual IEnumerator IE_SkillProcess()
+    {
+        projectile.transform.position = targetPos;
+        projectile.gameObject.SetActive(true);
+
+        yield return new WaitForSeconds(0.05f);
+
+        projectile.gameObject.SetActive(false);
+    }
+
+    public int Get_EffectiveDamage()
+    {
+        if (skillLevel == 0) return 0;
+        if (damage.Length < skillLevel) return 0;
+        return damage[skillLevel - 1];
+    }
+
+    public int Get_EffectiveMagicDamage()
+    {
+        if (skillLevel == 0) return 0;
+        if (mdamage.Length < skillLevel) return 0;
+        return mdamage[skillLevel - 1];
     }
 }

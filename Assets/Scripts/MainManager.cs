@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
 
-public class MainManager : MonoBehaviourPunCallbacks
+public partial class MainManager : MonoBehaviourPunCallbacks
 {
     public Player[] allPlayers { get; set; }
     GameObject playerObj;
@@ -28,7 +28,7 @@ public class MainManager : MonoBehaviourPunCallbacks
     }
 
     [SerializeField] GameObject cursorObjSample;
-    public GameObject lineObjSample;
+    [SerializeField] GameObject lineObjSample;
 
     [Header("Prefabs")]
     [SerializeField] GameObject _playerPrefab;
@@ -51,6 +51,10 @@ public class MainManager : MonoBehaviourPunCallbacks
     private void Start()
     {
         SetSpawn_Player();
+        //if(photonView.IsMine) Add_EffectResource(GameManager.USER_CHARACTER);
+
+        //자신의 캐릭터 이펙트 풀링
+        Add_EffectResource(GameManager.USER_CHARACTER);
     }
 
     private void SetSpawn_Player()
@@ -63,8 +67,10 @@ public class MainManager : MonoBehaviourPunCallbacks
         playerObj = PhotonNetwork.Instantiate(_playerPrefab.name,
                                                          new Vector3(randX, 0, randZ),
                                                          Quaternion.Euler(0, 0, 0));
-        playerObj.GetComponent<Player>()._cursorObj = cursorObjSample;
 
+        playerObj.GetComponent<Player>()._cursorObj = cursorObjSample;
+        playerObj.GetComponent<Player>().Set_InitLineRendererObj(lineObjSample);
+        
         photonView.RPC("CallbackRPC_CreateCharacter", RpcTarget.AllBuffered);
         
         photonView.RPC("CallbackRPC_SetParentCharacter", RpcTarget.AllBuffered);

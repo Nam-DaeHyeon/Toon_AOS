@@ -54,6 +54,10 @@ MonoBehaviour:
   - CallbackRPC_UnHide
   - CallbackRPC_InnerPlayerAdd
   - CallbackRPC_InnerPlayerRemove
+  - CallbackRPC_ActiveParticle
+  - CallbackRPC_UnActiveParticle
+  - CallbackRPC_UnActiveParticleMyEffect
+  - CallbackRPC_Init_UnActiveParticleMyEffect
   DisableAutoOpenWizard: 1
   ShowSettings: 0
   DevRegionSetOnce: 1

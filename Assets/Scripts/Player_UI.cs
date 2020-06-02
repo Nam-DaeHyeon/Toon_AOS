@@ -9,12 +9,11 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     [SerializeField] UI_SkillSlot[] _skillSlots;
     [SerializeField] UI_SkillDesc _skillDesc;
     public Canvas UI_WorldCvs;
-
-
+    
     /// <summary>
     /// 스킬 공격 시, 공격 범위를 가시화 해주기 위한 라인렌더러 오브젝트
     /// </summary>
-    GameObject lineObj;
+    GameObject _lineObj;
     int radiovector = 5;
     float radioangle = 45f;
 
@@ -51,6 +50,13 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
                 _skillSlots[3].SetInit_Skill(_skillSlots[3].gameObject.AddComponent<sk_Cat04_Snipe>());
                 break;
         }
+
+        if (!photonView.IsMine) return;
+        for (int i = 0; i < _skillSlots.Length; i++)
+        {
+            _projectiles[i].SetInit_Parameters(_skillSlots[i].Get_Skill(), transform, _animator.transform);
+            _skillSlots[i].SetInit_Projectile(_projectiles[i]);
+        }
     }
     
     /// <summary>
@@ -79,6 +85,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     /// </summary>
     public void GetSkillPoint()
     {
+        if (!photonView.IsMine) return;
+
         _skillPoint++;
         for(int i =0;i <_skillSlots.Length;i++)
         {
@@ -100,13 +108,13 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     /// <summary>
     /// 라인 렌더러 오브젝트 초기화
     /// </summary>
-    private void Set_InitLineRendererObj()
+    public void Set_InitLineRendererObj(GameObject lineObj)
     {
-        lineObj = MainManager.instance.lineObjSample;
-        lineObj.transform.parent = transform;
-        lineObj.transform.localPosition = Vector3.zero;
-        lineObj.transform.localEulerAngles = Vector3.zero;
-        lineObj.SetActive(false);
+        _lineObj = lineObj;
+        _lineObj.transform.parent = transform;
+        _lineObj.transform.localPosition = Vector3.zero;
+        _lineObj.transform.localEulerAngles = Vector3.zero;
+        _lineObj.SetActive(false);
 
         //Sample Test...
         //StartCoroutine(IE_TEST_TargetingRender());
@@ -136,29 +144,29 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     /// </summary>
     public void DrawOff_LineRender()
     {
-        lineObj.SetActive(false);
+        _lineObj.SetActive(false);
     }
 
     #region Test SkillArea Render
     IEnumerator IE_TEST_TargetingRender()
     {
         //부채꼴 렌더
-        LineRenderer line = lineObj.GetComponent<LineRenderer>();
-        if (line == null) line = lineObj.AddComponent<LineRenderer>();
+        LineRenderer line = _lineObj.GetComponent<LineRenderer>();
+        if (line == null) line = _lineObj.AddComponent<LineRenderer>();
 
         yield return new WaitUntil(() => Input.GetKeyDown(KeyCode.Escape));
 
-        lineObj.transform.localPosition = Vector3.zero;
-        lineObj.transform.localEulerAngles = Vector3.zero;
+        _lineObj.transform.localPosition = Vector3.zero;
+        _lineObj.transform.localEulerAngles = Vector3.zero;
 
         Vector3[] linePos = new Vector3[(int)radioangle + 2];
         //linePos[0] = transform.position;
         linePos[0] = Vector3.zero;
         //linePos[(int)radioangle + 1] = transform.position;
         linePos[(int)radioangle + 1] = Vector3.zero;
-        lineObj.transform.Rotate(-Vector3.up * radioangle * 0.5f, Space.Self);
+        _lineObj.transform.Rotate(-Vector3.up * radioangle * 0.5f, Space.Self);
         GameObject tempTr = new GameObject();
-        tempTr.transform.parent = lineObj.transform;
+        tempTr.transform.parent = _lineObj.transform;
         tempTr.transform.localPosition = Vector3.zero;
         tempTr.transform.localEulerAngles = Vector3.zero;
 
@@ -181,10 +189,10 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
 
     private IEnumerator IE_Draw_LineRender()
     {
-        LineRenderer line = lineObj.GetComponent<LineRenderer>();
-        if (line == null) line = lineObj.AddComponent<LineRenderer>();
+        LineRenderer line = _lineObj.GetComponent<LineRenderer>();
+        if (line == null) line = _lineObj.AddComponent<LineRenderer>();
 
-        lineObj.transform.localEulerAngles = Vector3.zero;
+        _lineObj.transform.localEulerAngles = Vector3.zero;
 
         Vector3[] linePos = null;
 
@@ -193,7 +201,24 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         {
             linePos = new Vector3[2];
             linePos[0] = Vector3.zero;
-            linePos[1] = linePos[0] + lineObj.transform.forward * radiovector;
+            linePos[1] = linePos[0] + _lineObj.transform.forward * radiovector;
+        }
+        else if(radioangle == 360)
+        {
+            linePos = new Vector3[(int)radioangle];
+
+            GameObject tempTr = new GameObject();
+            tempTr.transform.parent = _lineObj.transform;
+            tempTr.transform.localPosition = Vector3.zero;
+            tempTr.transform.localEulerAngles = Vector3.zero;
+            for (int i = 0; i < radioangle; i++)
+            {
+                if (i >= linePos.Length) break;
+                //linePos[i] = tempTr.transform.position + tempTr.transform.forward * radiovector;
+                linePos[i] = linePos[0] + tempTr.transform.forward * radiovector;
+                tempTr.transform.Rotate(Vector3.up, Space.Self);
+            }
+            Destroy(tempTr.gameObject);
         }
         else
         {
@@ -202,9 +227,9 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
             linePos[0] = Vector3.zero;
             //linePos[(int)radioangle + 1] = transform.position;
             linePos[(int)radioangle + 1] = Vector3.zero;
-            lineObj.transform.Rotate(-Vector3.up * radioangle * 0.5f, Space.Self);
+            _lineObj.transform.Rotate(-Vector3.up * radioangle * 0.5f, Space.Self);
             GameObject tempTr = new GameObject();
-            tempTr.transform.parent = lineObj.transform;
+            tempTr.transform.parent = _lineObj.transform;
             tempTr.transform.localPosition = Vector3.zero;
             tempTr.transform.localEulerAngles = Vector3.zero;
 
@@ -219,16 +244,16 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         }
         line.positionCount = linePos.Length;
         line.SetPositions(linePos);
-        lineObj.SetActive(true);
+        _lineObj.SetActive(true);
 
         //Trace Mouse Cursor
-        while(lineObj.activeInHierarchy)
+        while(_lineObj.activeInHierarchy)
         {
             Ray ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
             if (Physics.Raycast(ray, out hit, 100, LayerMask.GetMask("Default")))
             {
-                lineObj.transform.LookAt(new Vector3(hit.point.x, transform.position.y, hit.point.z));
+                _lineObj.transform.LookAt(new Vector3(hit.point.x, transform.position.y, hit.point.z));
             }
 
             yield return null;

@@ -20,7 +20,8 @@ public enum ATK_TARGET
 public enum PLAYER_STATE
 {
     IDLE,
-    ATTACK
+    ATTACK,
+    CAST
 }
 
 public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
@@ -34,12 +35,18 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     #region 플레이어 능력치 파라미터
     PLAYER_STATE _myState = PLAYER_STATE.IDLE;
 
-    float _currHP = 0;
-    float _maxHP = 100;
-    float _attackDamage = 20f;
-    float _attackDistance = 2.5f;
+    int _level = 1;
 
-    float _speed = 5f;
+    float _currHP = 0;  //현재 체력
+    float _maxHP = 100; //최대 체력
+    float _currSP = 0F; //현재 쉴드량
+    float _maxSP = 0F;  //최대 쉴드량
+    float _attackDamage = 5f;       //공격력
+    float _attackDistance = 2.5f;   //공격범위
+    int _defence = 0;   //물리방어력
+    int _mdefence = 0;  //마법방어력
+
+    float _speed = 5f;  //이동속도
 
     public int _skillPoint { set; get; } = 0;
     #endregion
@@ -55,6 +62,9 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
 
     Shader baseShader;
     Shader alphaShader;
+
+    PlayerProjectile[] _projectiles;
+    public Coroutine runningSkillRoutine { get; set; }
     #endregion
 
     #region 컴포넌트
@@ -72,6 +82,20 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     {
         baseShader = Shader.Find("Unlit/CellShader");
         alphaShader = Shader.Find("Unlit/CellShaderAlpha");
+
+        //프로젝타일 생성
+        if (photonView.IsMine)
+        {
+            _projectiles = new PlayerProjectile[4];
+            for (int i = 0; i < _projectiles.Length; i++)
+            {
+                GameObject newObj = new GameObject("Player Projectile");
+                newObj.SetActive(false);
+                _projectiles[i] = newObj.AddComponent<PlayerProjectile>();
+                Collider newCol = newObj.AddComponent<SphereCollider>();
+                newCol.isTrigger = true;
+            }
+        }
     }
 
     private void Start()
@@ -124,16 +148,22 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         //로컬 쉐이더 초기화
         _skinRender.material.shader = baseShader;
 
-        if (photonView.IsMine) _cursorObj.SetActive(false);
-
-        //공격범위 가시화 오브젝트 초기화
-        Set_InitLineRendererObj();
+        if (photonView.IsMine)
+        {
+            _cursorObj.SetActive(false);
+            _lineObj.SetActive(false);
+        }
+        else
+        {
+            if(_cursorObj != null) Destroy(_cursorObj.gameObject);
+            if(_lineObj != null) Destroy(_lineObj.gameObject);
+        }
     }
 
     /// <summary>
     /// 플레이어 컨트롤러 스테이트 머신
     /// </summary>
-    private void Set_StateMachine(PLAYER_STATE nextState)
+    public void Set_StateMachine(PLAYER_STATE nextState)
     {
         _myState = nextState;
         switch(nextState)
@@ -144,7 +174,15 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
             case PLAYER_STATE.ATTACK:
                 StartCoroutine(IE_AttackController());
                 break;
+            case PLAYER_STATE.CAST:
+                //StartCoroutine(IE_CastController());
+                break;
         }
+    }
+
+    public PLAYER_STATE Get_CurrentState()
+    {
+        return _myState;
     }
 
     #region 플레이어 기본 컨트롤러 코루틴
@@ -256,6 +294,13 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
 
             yield return null;
         }
+    }
+    #endregion
+
+    #region 플레이어 스킬 시전 중 컨트롤러 코루틴
+    IEnumerator IE_CastController()
+    {
+        yield break;
     }
     #endregion
 
@@ -379,6 +424,38 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     }
 
     /// <summary>
+    /// 마우스 포인트가 가리키는 지면 좌표를 반환합니다.
+    /// </summary>
+    /// <returns>포인터가 있을 경우 지표면 좌표 반환. 포인터가 없을 경우 플레이어의 절대좌표를 반환합니다.</returns>
+    public Vector3 GetHitPoint()
+    {
+        //지면 확인
+        Ray ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
+        RaycastHit hit;
+        if (Physics.Raycast(ray, out hit, 100, LayerMask.GetMask("Default")))
+        {
+            if (hit.transform.tag.Equals("Ground"))
+            {
+                return hit.point;
+            }
+        }
+
+        return transform.position;
+    }
+
+    /// <summary>
+    /// 스킬 사용으로 인한 시선 재설정 및 행동 중지를 명렵합니다.
+    /// </summary>
+    public void Callback_SetDir_OnKeyUp()
+    {
+        isMove = false;
+        distance = 0f;
+        //photonView.RPC("CallbackRPC_AnimatorTrigger", RpcTarget.All, "IDLE");
+        //CallbackRPC_AnimatorTrigger("IDLE")
+    }
+
+    #region Animator Section
+    /// <summary>
     /// 애니메이터 컴포넌트 등록
     /// </summary>
     public void SetAnimatorComponent(Animator animator)
@@ -401,34 +478,11 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     }
 
     /// <summary>
-    /// 경사면 방향벡터 보정
+    /// 애니메이션 트리거를 동작시킵니다.
     /// </summary>
-    private void Correction_DirectionVector()
+    public void SetAnimTrigger(string keyName)
     {
-        //dir = 보정.. 외적벡터
-        Ray ray = new Ray(new Vector3(transform.position.x, transform.position.y + 1.3f, transform.position.z), dir);
-        RaycastHit hit;
-        if (Physics.Raycast(ray, out hit, 0.6f, LayerMask.GetMask("Default")))
-        {
-            Debug.Log(hit.transform.name + " Input : " + dir);
-            var T = Vector3.Cross(hit.normal, dir);
-            var Out = Vector3.Cross(T, hit.normal);
-            dir = Out;
-            Debug.Log(hit.transform.name + " Output : " + dir);
-        }
-        else
-        {
-            if(atkTargetPlayer == null)
-            {
-                dir = _targetPos - transform.position;
-                dir.Normalize();
-            }
-            else
-            {
-                dir = atkTargetPlayer.transform.position - transform.position;
-                dir.Normalize();
-            }
-        }
+        photonView.RPC("CallbackRPC_AnimatorTrigger", RpcTarget.All, keyName);
     }
 
     /// <summary>
@@ -466,11 +520,43 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
 
         atkTargetPlayer.TakeDamage(_attackDamage);
     }
+    #endregion
 
     /// <summary>
-    /// 플레이어가 피격 당했습니다.
+    /// 경사면 방향벡터 보정 (TEST)
     /// </summary>
-    /// <param name="id">피격당한 플레이어 포톤 유저 ID</param>
+    private void Correction_DirectionVector()
+    {
+        //dir = 보정.. 외적벡터
+        Ray ray = new Ray(new Vector3(transform.position.x, transform.position.y + 1.3f, transform.position.z), dir);
+        RaycastHit hit;
+        if (Physics.Raycast(ray, out hit, 0.6f, LayerMask.GetMask("Default")))
+        {
+            Debug.Log(hit.transform.name + " Input : " + dir);
+            var T = Vector3.Cross(hit.normal, dir);
+            var Out = Vector3.Cross(T, hit.normal);
+            dir = Out;
+            Debug.Log(hit.transform.name + " Output : " + dir);
+        }
+        else
+        {
+            if (atkTargetPlayer == null)
+            {
+                dir = _targetPos - transform.position;
+                dir.Normalize();
+            }
+            else
+            {
+                dir = atkTargetPlayer.transform.position - transform.position;
+                dir.Normalize();
+            }
+        }
+    }
+
+    #region HP & Shield 피해관련 연산 및 능력치 갱신
+    /// <summary>
+    /// 플레이어가 물리 피해를 받았습니다.
+    /// </summary>
     /// <param name="damage">피격 데미지</param>
     //public void TakeDamage(string id, int damage)
     public void TakeDamage(float damage)
@@ -478,31 +564,133 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         if (_currHP < 0) return;
 
         int endDamage = (int)damage;
-        photonView.RPC("CallbackRPC_SyncHP", RpcTarget.All, endDamage);
+        photonView.RPC("CallbackRPC_SyncHP", RpcTarget.All, endDamage, false);
     }
 
-    [PunRPC]
-    private void CallbackRPC_SyncHP(int endDamage)
+    /// <summary>
+    /// 플레이어가 마법 피해를 받았습니다.
+    /// </summary>
+    /// <param name="damage">피격 데미지</param>
+    //public void TakeDamage(string id, int damage)
+    public void TakeMDamage(float damage)
     {
-        _currHP -= endDamage;
+        if (_currHP < 0) return;
+
+        int endDamage = (int)damage;
+        photonView.RPC("CallbackRPC_SyncHP", RpcTarget.All, endDamage, true);
+    }
+
+    /// <summary>
+    /// [RPC] 플레이어 체력 동기화
+    /// </summary>
+    /// <param name="endDamage"></param>
+    [PunRPC]
+    private void CallbackRPC_SyncHP(int endDamage, bool isMagic)
+    {
+        int tempDamage = endDamage;
+        if (_currSP > 0)
+        {
+            //잔여 쉴드량이 남을 경우
+            if (_currSP - endDamage > 0)
+            {
+                _currSP -= tempDamage;
+                _imgHPBar.fillAmount = _currSP / _maxSP;
+                return;
+            }
+            else
+            {
+                tempDamage += ((int)_currSP - endDamage);
+                _imgHPBar.color = Color.red;
+            }
+        }
+
+        int endDefence = _defence;
+        if (isMagic) endDefence = _mdefence;
+        tempDamage -= endDamage;
+        if (tempDamage <= 0) tempDamage = 0;    //유효 데미지 없음
+
+        _currHP -= tempDamage;
         _imgHPBar.fillAmount = _currHP / _maxHP;
     }
 
-    void IPunObservable.OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    /// <summary>
+    /// 최대 쉴드량을 설정합니다.
+    /// </summary>
+    /// <param name="sp"></param>
+    public void Set_MaxShield(int sp)
     {
-        if (stream.IsWriting)
-        {
-            stream.SendNext(GameManager.USER_NICKNAME);
-            stream.SendNext(this._imgHPBar.fillAmount);
+        _maxSP = sp;
+        _currSP = _maxSP;
 
-        }
-        else
+        //체력바 업데이트 (+쉴드바 추가)
+        _imgHPBar.color = Color.white;
+        _imgHPBar.fillAmount = _currSP / _maxSP;
+        photonView.RPC("CallbackRPC_SyncHP", RpcTarget.All, 0);
+    }
+
+    /// <summary>
+    /// 현재 쉴드량을 반환합니다.
+    /// </summary>
+    public float Get_CurrentShield()
+    {
+        return _currSP;
+    }
+
+    /// <summary>
+    /// 이동속도를 반환합니다.
+    /// </summary>
+    public float Get_Speed()
+    {
+        return _speed;
+    }
+
+    /// <summary>
+    /// 쉴드를 제거합니다.
+    /// </summary>
+    public void Set_ZeroShield()
+    {
+        _maxSP = 0;
+        _currSP = _maxSP;
+
+        //체력바 업데이트
+        _imgHPBar.color = Color.red;
+        photonView.RPC("CallbackRPC_SyncHP", RpcTarget.All, 0);
+    }
+    #endregion
+
+    /// <summary>
+    /// 버프/디버프로 인한 능력치를 갱신합니다. 합연산으로 처리합니다.
+    /// </summary>
+    /// <param name="paramName">ATTACKDAMAGE | DEFENCE | MDEFENCE | SPEED</param>
+    /// <param name="value">합 연산 수치</param>
+    /// <param name="isBuff">합 연산 여부. false 일경우, 차 연산을 진행한다.</param>
+    public void UpdateParamAboutBuff(string paramName, int value, bool isBuff)
+    {
+        photonView.RPC("CallbackRPC_SyncParam", RpcTarget.All, paramName, value, isBuff);
+    }
+
+    [PunRPC]
+    private void CallbackRPC_SyncParam(string paramName, int value, bool isBuff)
+    {
+        int corr = (isBuff) ? 1 : -1;
+        switch (paramName)
         {
-            _textNickName.text = (string)stream.ReceiveNext();
-            this._imgHPBar.fillAmount = (float)stream.ReceiveNext();
+            case "ATTACKDAMAGE":
+                _attackDamage += corr * value;
+                break;
+            case "DEFENCE":
+                _defence += corr * value;
+                break;
+            case "MDEFENCE":
+                _mdefence += corr * value;
+                break;
+            case "SPEED":
+                _speed += corr * value;
+                break;
         }
     }
-    
+
+    #region Bush & Invisible Section
     BushGrass _currBush;
     /// <summary>
     /// 부쉬에 들어갔습니다.
@@ -580,7 +768,33 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         //gameObject.layer = LayerMask.NameToLayer("Player");
         _skinRender.material.shader = baseShader;
     }
-    
+    #endregion
+
+    /// <summary>
+    /// [RPC] 플레이어 레벨업 동기화
+    /// </summary>
+    [PunRPC]
+    private void CallbackRPC_PlayerLevelUP()
+    {
+        _level++;
+        GetSkillPoint();
+    }
+
+    void IPunObservable.OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if (stream.IsWriting)
+        {
+            stream.SendNext(GameManager.USER_NICKNAME);
+            stream.SendNext(this._imgHPBar.fillAmount);
+
+        }
+        else
+        {
+            _textNickName.text = (string)stream.ReceiveNext();
+            this._imgHPBar.fillAmount = (float)stream.ReceiveNext();
+        }
+    }
+
     private void OnMouseEnter()
     {
         //다른 플레이어에게 마우스를 올렸을 때
