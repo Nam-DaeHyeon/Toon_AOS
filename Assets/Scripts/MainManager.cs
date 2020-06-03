@@ -157,11 +157,7 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
         }
         else
         {
-            Dictionary<string, GameObject> tempPool = (Dictionary<string, GameObject>) stream.ReceiveNext();
-            foreach(var item in tempPool)
-            {
-                if(!skillPool.ContainsKey(item.Key)) skillPool.Add(item.Key, item.Value);
-            }
+            skillPool = (Dictionary<string, GameObject>)stream.ReceiveNext();
         }
     }
 }

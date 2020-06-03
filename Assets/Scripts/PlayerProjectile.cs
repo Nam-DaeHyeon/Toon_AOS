@@ -110,6 +110,14 @@ public class PlayerProjectile : MonoBehaviour
             tempRigid.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotation;
         }
 
+        //다른 클라이언트에도 위치값이 동기화되야하기 때문에 photonView를 추가한다.
+        if(GetComponent<Photon.Pun.PhotonView>()!= null)
+        {
+            var photonView = gameObject.AddComponent<Photon.Pun.PhotonView>();
+            var photonTrView = gameObject.AddComponent<Photon.Pun.PhotonTransformView>();
+            photonView.ObservedComponents.Add(photonTrView);
+        }
+
         StartCoroutine(IE_PlayMissile());
     }
 
@@ -134,7 +142,7 @@ public class PlayerProjectile : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        Debug.Log(other.name + " (" + LayerMask.LayerToName(other.gameObject.layer) + ")");
+        //Debug.Log(other.name + " (" + LayerMask.LayerToName(other.gameObject.layer) + ")");
         switch(myOption)
         {
             default:
@@ -181,9 +189,14 @@ public class PlayerProjectile : MonoBehaviour
             myOption = PROJECTILE_OPTION.투사체충돌발생;
         }
         //다른 프로젝타일과 충돌의 경우 무시
-        if(other.GetComponent<PlayerProjectile>() != null)
+        else if(other.GetComponent<PlayerProjectile>() != null)
         {
             return;
+        }
+        //부쉬와의 충돌의 경우 무시 (어차피 Physics 비활성화)
+        else if(other.gameObject.layer.Equals(LayerMask.NameToLayer("Grass")))
+        {
+
         }
         //나머지는 맵과 충돌한 경우..
         else

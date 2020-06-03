@@ -100,7 +100,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
 
     private void Start()
     {
-        Set_InitParameter();
+        //Set_InitParameter();
+        photonView.RPC("CallbackRPC_InitParameter", RpcTarget.AllBuffered);
 
         if (photonView.IsMine)
         {
@@ -119,11 +120,24 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         //UI 설정
         //photonView.RPC("CallbackRPC_SyncNickname", RpcTarget.All, photonView.Owner.NickName);
         //photonView.RPC("CallbackRPC_SyncHPBar", RpcTarget.All);
+        
         _textNickName.text = photonView.Owner.NickName;
         _imgHPBar.fillAmount = _currHP / _maxHP;
     }
 
-    private void Set_InitParameter()
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Alpha1)) Debug.Log(photonView);
+        if (Input.GetKeyDown(KeyCode.Alpha2)) Debug.Log(photonView.Owner);
+        if (Input.GetKeyDown(KeyCode.Alpha3)) Debug.Log(photonView.Owner.NickName);
+    }
+
+    /// <summary>
+    /// RPC 동기화. 초기 플레이어의 능력치를 동기화합니다.
+    /// </summary>
+    [PunRPC]
+    //private void Set_InitParameter()
+    private void CallbackRPC_InitParameter()
     {
         //캐릭터에 따른 능력치 설정
         
@@ -436,7 +450,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         {
             if (hit.transform.tag.Equals("Ground"))
             {
-                return hit.point;
+                return new Vector3(hit.point.x, transform.position.y, hit.point.z);
             }
         }
 

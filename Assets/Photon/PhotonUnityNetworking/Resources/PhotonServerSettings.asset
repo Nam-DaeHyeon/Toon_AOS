@@ -60,6 +60,8 @@ MonoBehaviour:
   - CallbackRPC_Init_UnActiveParticleMyEffect
   - CallbackRPC_PlayerLevelUP
   - CallbackRPC_SyncParam
+  - CallbackRPC_SharingSkillResources
+  - CallbackRPC_InitParameter
   DisableAutoOpenWizard: 1
   ShowSettings: 0
   DevRegionSetOnce: 1
