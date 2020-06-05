@@ -35,7 +35,7 @@ public class sk_Bear04_Frenzy : Skill
         }
 
         //선 이펙트
-        MainManager.instance.SetActive_SkillEffect("Frenzy", player._animator.transform, true);
+        MainManager.instance.SetActive_SkillEffect("Frenzy", player._animator.transform, player.transform);
 
         yield return new WaitForSeconds(duration);
 

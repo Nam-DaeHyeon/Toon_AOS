@@ -63,7 +63,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     Shader baseShader;
     Shader alphaShader;
 
-    PlayerProjectile[] _projectiles;
+    [SerializeField] PlayerProjectile[] _projectiles;
     public Coroutine runningSkillRoutine { get; set; }
     #endregion
 
@@ -73,8 +73,9 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     [SerializeField] Image _imgHPBar;
     [HideInInspector] public Animator _animator { get; set; }
     [HideInInspector] public SkinnedMeshRenderer _skinRender { get; set; }
+    [HideInInspector] public MeshRenderer _weaponRender { get; set; }
     #endregion
-    
+
     //커서 오브젝트 샘플
     [HideInInspector] public GameObject _cursorObj;
 
@@ -86,6 +87,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         //프로젝타일 생성
         if (photonView.IsMine)
         {
+            /*
             _projectiles = new PlayerProjectile[4];
             for (int i = 0; i < _projectiles.Length; i++)
             {
@@ -95,13 +97,16 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
                 Collider newCol = newObj.AddComponent<SphereCollider>();
                 newCol.isTrigger = true;
             }
+            */
+
+            photonView.RPC("CallbackRPC_InitProjectileTransform", RpcTarget.AllBuffered);
         }
     }
 
     private void Start()
     {
-        //Set_InitParameter();
-        photonView.RPC("CallbackRPC_InitParameter", RpcTarget.AllBuffered);
+        Set_InitParameter();
+        //photonView.RPC("CallbackRPC_InitParameter", RpcTarget.AllBuffered);
 
         if (photonView.IsMine)
         {
@@ -125,22 +130,14 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         _imgHPBar.fillAmount = _currHP / _maxHP;
     }
 
-    private void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.Alpha1)) Debug.Log(photonView);
-        if (Input.GetKeyDown(KeyCode.Alpha2)) Debug.Log(photonView.Owner);
-        if (Input.GetKeyDown(KeyCode.Alpha3)) Debug.Log(photonView.Owner.NickName);
-    }
-
     /// <summary>
-    /// RPC 동기화. 초기 플레이어의 능력치를 동기화합니다.
+    /// 초기 플레이어의 능력치를 동기화합니다.
     /// </summary>
-    [PunRPC]
-    //private void Set_InitParameter()
-    private void CallbackRPC_InitParameter()
+    private void Set_InitParameter()
+    //private void CallbackRPC_InitParameter()
     {
         //캐릭터에 따른 능력치 설정
-        
+
         //캐릭터별 스킬 설정
         SetInit_MySkillSet();
         GetSkillPoint();
@@ -161,6 +158,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
 
         //로컬 쉐이더 초기화
         _skinRender.material.shader = baseShader;
+        _weaponRender.material.SetColor("_Color", new Color(1, 1, 1, 1));
 
         if (photonView.IsMine)
         {
@@ -169,8 +167,19 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         }
         else
         {
-            if(_cursorObj != null) Destroy(_cursorObj.gameObject);
-            if(_lineObj != null) Destroy(_lineObj.gameObject);
+            if (_cursorObj != null) Destroy(_cursorObj.gameObject);
+            if (_lineObj != null) Destroy(_lineObj.gameObject);
+        }
+    }
+
+    [PunRPC]
+    private void CallbackRPC_InitProjectileTransform()
+    {
+        for (int i = 0; i < _projectiles.Length; i++)
+        {
+            _projectiles[i].transform.parent = null;
+            _projectiles[i].gameObject.layer = 0; //LayerMask.NameToLayer("Default");
+            _projectiles[i].gameObject.SetActive(false);
         }
     }
 
@@ -365,6 +374,9 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
 
         while(atkToggle)
         {
+            //스킬 시전 중일 때에는 타겟팅 기능 일시정지
+            yield return new WaitUntil(() => _myState.Equals(PLAYER_STATE.CAST));
+
             Ray ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
             if (Physics.Raycast(ray, out hit, 100, LayerMask.GetMask("Default")))
@@ -445,8 +457,11 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     {
         //지면 확인
         Ray ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit;
-        if (Physics.Raycast(ray, out hit, 200, LayerMask.GetMask("Default")))
+        RaycastHit[] hits;
+
+        //if (Physics.Raycast(ray, out hit, 200, LayerMask.GetMask("Default")))
+        hits = Physics.RaycastAll(ray, 200, LayerMask.GetMask("Default"));
+        foreach(var hit in hits)
         {
             if (hit.transform.tag.Equals("Ground"))
             {
@@ -476,7 +491,9 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     {
         if (animator == null) _animator = GetComponentInChildren<Animator>();
         else _animator = animator;
-        _skinRender = _animator.transform.GetComponentInChildren<SkinnedMeshRenderer>();
+        //_skinRender = _animator.transform.GetComponentInChildren<SkinnedMeshRenderer>();
+        _skinRender = _animator.GetComponent<PlayerMeshRenderLinker>().skinRender;
+        _weaponRender = _animator.GetComponent<PlayerMeshRenderLinker>().weaponRender;
 
         //애니메이션 동기화를 위해 옵저버 등록
         if (!photonView.ObservedComponents.Contains(animator.GetComponent<PhotonAnimatorView>()))
@@ -764,6 +781,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     {
         //gameObject.layer = LayerMask.NameToLayer("HidePlayer");
         _skinRender.material.shader = alphaShader;
+        _weaponRender.material.SetColor("_Color", new Color(1, 1, 1, 0));
         //_skinRender.sharedMaterial.SetColor("_Color", new Color32(255, 255, 255, 110));
 
         //뒤늦게 들어온 애가 있을 경우 전에 들어온 친구한테 렌더링되도록 업데이트.. allPlayers로 해결...
@@ -771,6 +789,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         if (photonView.IsMine)
         {
             _skinRender.material.SetColor("_Color", new Color(1, 1, 1, 0.43f));
+            _weaponRender.material.SetColor("_Color", new Color(1, 1, 1, 0.43f));
         }
         else
         {
@@ -789,6 +808,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
                 {
                     //부쉬 밖에 있는 Other's Camera : 자신의 캐릭터 비활성화 
                     _skinRender.material.SetColor("_Color", new Color(1, 1, 1, 0));
+                    _weaponRender.material.SetColor("_Color", new Color(1, 1, 1, 0));
                     UI_WorldCvs.gameObject.SetActive(false);
                 }
             }
@@ -820,11 +840,18 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
             stream.SendNext(GameManager.USER_NICKNAME);
             stream.SendNext(this._imgHPBar.fillAmount);
 
+            // We own this player: send the others our data
+            stream.SendNext(transform.position);
+            stream.SendNext(transform.rotation);
         }
         else
         {
             _textNickName.text = (string)stream.ReceiveNext();
             this._imgHPBar.fillAmount = (float)stream.ReceiveNext();
+
+            // Network player, receive data
+            this.transform.position = (Vector3)stream.ReceiveNext();
+            this.transform.rotation = (Quaternion)stream.ReceiveNext();
         }
     }
 

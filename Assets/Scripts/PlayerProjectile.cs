@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Photon.Pun;
 
 public enum PROJECTILE_OPTION
 {
@@ -10,7 +11,7 @@ public enum PROJECTILE_OPTION
     투사체충돌없음,
 }
 
-public class PlayerProjectile : MonoBehaviour
+public class PlayerProjectile : MonoBehaviourPun, IPunObservable
 {
     [SerializeField] SphereCollider _myCollider;
     Transform _playerTr;
@@ -25,6 +26,11 @@ public class PlayerProjectile : MonoBehaviour
     /// 프로젝타일과 충돌한 플레이어.. 상태이상 관련 처리를 위해 따로 저장한다.
     /// </summary>
     public List<Player> colliderPlayers { get; set; } = new List<Player>();
+
+    GameObject TempMissileObj = null;
+
+    private Vector3 correctPlayerPos;
+    private Quaternion correctPlayerRot;
 
     private void Awake()
     {
@@ -102,33 +108,60 @@ public class PlayerProjectile : MonoBehaviour
         transform.rotation = _playerAnimatorTr.rotation;
         myOption = PROJECTILE_OPTION.투사체;
 
-        //투사체가 맵에 부딪히는 것을 판단하기 위해 리지드바디를 추가한다.
-        if(GetComponent<Rigidbody>() == null)
-        {
-            Rigidbody tempRigid = gameObject.AddComponent<Rigidbody>();
-            tempRigid.useGravity = false;
-            tempRigid.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotation;
-        }
-
-        //다른 클라이언트에도 위치값이 동기화되야하기 때문에 photonView를 추가한다.
-        if(GetComponent<Photon.Pun.PhotonView>()!= null)
+        #region [NOT WORK] 다른 클라이언트에도 위치값이 동기화되야하기 때문에 photonView를 추가한다. (런타임 중 로컬로 추가한 경우 적용 안됨)
+        /*
+        if (GetComponent<Photon.Pun.PhotonView>()!= null)
         {
             var photonView = gameObject.AddComponent<Photon.Pun.PhotonView>();
             var photonTrView = gameObject.AddComponent<Photon.Pun.PhotonTransformView>();
             photonView.ObservedComponents.Add(photonTrView);
         }
+        */
+        #endregion
 
-        StartCoroutine(IE_PlayMissile());
+        Vector3 dir = _playerTr.GetComponent<Player>().GetForwordDir_LineRender();
+        photonView.RPC("CallbackRPC_MissileProecess", RpcTarget.All, dir, _setSkill.skillMissileExistTime, _setSkill.skillMissileSpeed);
     }
 
-    private IEnumerator IE_PlayMissile()
+    [PunRPC]
+    private void CallbackRPC_MissileProecess(Vector3 dir, float intime, float speed)
     {
-        float intime = _setSkill.skillMissileExistTime;
-        float speed = _setSkill.skillMissileSpeed;
+        if(photonView.IsMine) StartCoroutine(IE_PlayMissile(dir, intime, speed));
+        else StartCoroutine(IE_PlayDummyMissile(dir, intime, speed));
+    }
+
+    public void Add_RigidBody()
+    {
+        photonView.RPC("CallbackRPC_AddRigidBody", RpcTarget.AllBuffered);
+    }
+
+    [PunRPC]
+    private void CallbackRPC_AddRigidBody()
+    {
+        Rigidbody tempRigid = gameObject.AddComponent<Rigidbody>();
+        tempRigid.useGravity = false;
+        tempRigid.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotation;
+
+    }
+
+    [PunRPC]
+    private void CallbackRPC_AddForceRigidbody(Vector3 force)
+    {
+        GetComponent<Rigidbody>().velocity = Vector3.zero;
+        GetComponent<Rigidbody>().AddForce(force, ForceMode.VelocityChange);
+    }
+
+
+    private IEnumerator IE_PlayMissile(Vector3 dir, float intime, float speed)
+    {
+        dir.Normalize();
+
+        //꼬리 이펙트를 위해 Add Force (Physics 동기화가 안됨)
+        //photonView.RPC("CallbackRPC_AddForceRigidbody", RpcTarget.AllBuffered, dir * speed);
 
         while (myOption.Equals(PROJECTILE_OPTION.투사체))
         {
-            transform.Translate(transform.forward * speed * Time.deltaTime, Space.World);
+            transform.Translate(dir * speed * Time.deltaTime, Space.World);
             intime -= Time.deltaTime;
             if (intime <= 0)
             {
@@ -140,8 +173,22 @@ public class PlayerProjectile : MonoBehaviour
         }
     }
 
+    private IEnumerator IE_PlayDummyMissile(Vector3 dir, float intime, float speed)
+    {
+        dir.Normalize();
+
+        while(true)
+        {
+            transform.Translate(dir * speed * Time.deltaTime, Space.World);
+
+            yield return null;
+        }
+    }
+
     private void OnTriggerEnter(Collider other)
     {
+        if (!photonView.IsMine) return;
+
         //Debug.Log(other.name + " (" + LayerMask.LayerToName(other.gameObject.layer) + ")");
         switch(myOption)
         {
@@ -185,6 +232,7 @@ public class PlayerProjectile : MonoBehaviour
             Player colplayer = other.GetComponent<Player>();
             if (colplayer.photonView.IsMine) return;
 
+            Debug.Log(colplayer.GetComponent<PhotonView>().ViewID);
             colliderPlayers.Add(colplayer);
             myOption = PROJECTILE_OPTION.투사체충돌발생;
         }
@@ -193,13 +241,49 @@ public class PlayerProjectile : MonoBehaviour
         {
             return;
         }
-        //부쉬와의 충돌의 경우 무시 (어차피 Physics 비활성화)
-        else if(other.gameObject.layer.Equals(LayerMask.NameToLayer("Grass")))
-        {
-
-        }
         //나머지는 맵과 충돌한 경우..
         else
             myOption = PROJECTILE_OPTION.투사체충돌발생;
     }
+
+    public Transform Get_PlayerTr() { return _playerTr; }
+
+    void IPunObservable.OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if(stream.IsWriting)
+        {
+            stream.SendNext(_setSkill);
+        }
+        else
+        {
+            _setSkill = (Skill)stream.ReceiveNext();
+        }
+    }
+    /*
+    // Update is called once per frame
+    void Update()
+    {
+        if (!photonView.IsMine)
+        {
+            transform.position = Vector3.Lerp(transform.position, this.correctPlayerPos, Time.deltaTime * 5);
+            transform.rotation = Quaternion.Lerp(transform.rotation, this.correctPlayerRot, Time.deltaTime * 5);
+        }
+    }
+
+    void IPunObservable.OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if (stream.IsWriting)
+        {
+            // We own this player: send the others our data
+            stream.SendNext(transform.position);
+            stream.SendNext(transform.rotation);
+        }
+        else
+        {
+            // Network player, receive data
+            this.transform.position = (Vector3)stream.ReceiveNext();
+            this.transform.rotation = (Quaternion)stream.ReceiveNext();
+        }
+    }
+    */
 }

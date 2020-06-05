@@ -26,7 +26,7 @@ public class sk_Bear03_Guard : Skill
         player.Set_MaxShield(damage[skillLevel - 1]);
 
         //선 이펙트
-        MainManager.instance.SetActive_SkillEffect("Guard", player._animator.transform, true);
+        MainManager.instance.SetActive_SkillEffect("Guard", player._animator.transform, player.transform);
 
         //yield return new WaitForSeconds(3F);
 

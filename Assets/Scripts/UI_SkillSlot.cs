@@ -44,7 +44,14 @@ public class UI_SkillSlot : MonoBehaviour
     /// </summary>
     public void SetInit_Projectile(PlayerProjectile projectile)
     {
+
+        if (setSkill.skillMissileSpeed != 0)
+        {
+            projectile.Add_RigidBody();
+        }
+
         setSkill.projectile = projectile;
+
     }
 
     /// <summary>

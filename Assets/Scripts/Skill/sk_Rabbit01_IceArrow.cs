@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Photon.Pun;
 
 //둔화
 public class sk_Rabbit01_IceArrow : Skill
@@ -43,7 +44,7 @@ public class sk_Rabbit01_IceArrow : Skill
         //부가기능 초기화
 
         //후 이펙트
-        MainManager.instance.SetActive_SkillEffect("IceArrowProjectile", player._animator.transform);
+        MainManager.instance.SetActive_SkillEffect("IceArrowProjectile", player._animator.transform, projectile.transform);
         GameObject effectObj = MainManager.instance.Get_SkillEffectObj("IceArrowProjectile");
 
         //... 프로젝타일과 이펙트가 같이 날아가도록 부모 종속 처리
@@ -53,16 +54,18 @@ public class sk_Rabbit01_IceArrow : Skill
             effectObj.transform.position = projectile.transform.position;
             effectObj.transform.rotation = projectile.transform.rotation;
         }
-        projectile.transform.position = player.transform.position + Vector3.up;
-        projectile.gameObject.SetActive(true);
-        projectile.SetPlay_Missile();
-        
+        //projectile.transform.position = player.transform.position + Vector3.up;
+        //projectile.gameObject.SetActive(true);
+        //projectile.SetPlay_Missile(player.GetForwordDir_LineRender());
+        MainManager.instance.Set_ActiveProjectile(projectile.gameObject, true);
+
         //상태 변환
         player.Set_StateMachine(PLAYER_STATE.IDLE);
 
         yield return new WaitWhile(() => projectile.myOption.Equals(PROJECTILE_OPTION.투사체));
 
-        projectile.gameObject.SetActive(false);
+        //projectile.gameObject.SetActive(false);
+        MainManager.instance.Set_ActiveProjectile(projectile.gameObject, false);
         MainManager.instance.SetUnActive_SkillEffect("IceArrowProjectile");
 
         if (projectile.myOption.Equals(PROJECTILE_OPTION.투사체충돌발생))
@@ -84,9 +87,8 @@ public class sk_Rabbit01_IceArrow : Skill
             {
                 if (target == null) continue;
                 //StartCoroutine(IE_SlowTimer(target));
-                target.GetBuff_FromOthers("SPEED", (int)(target.Get_Speed() * 0.2f), false, duration);
+                target.GetBuff_FromOthers("SPEED", (int)(target.Get_Speed() * 0.5F), false, duration);
             }
         }
     }
-
 }

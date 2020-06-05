@@ -50,7 +50,7 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
         photonView.RPC("CallbackRPC_Init_UnActiveParticleMyEffect", RpcTarget.AllBuffered);
         */
         //2-2. 다른 클라이언트에도 풀링
-        photonView.RPC("CallbackRPC_SharingSkillResources", RpcTarget.AllBuffered, skills);
+        photonView.RPC("CallbackRPC_SharingSkillResources", RpcTarget.AllBuffered, PhotonNetwork.LocalPlayer.UserId + PhotonNetwork.LocalPlayer.ActorNumber, skills);
         
         //이전에 입장한 플레이어의 이펙트 비활성화 (RPC 동기화가 Start보다 느리게 됨.. 그래서 탐색을 못함)
         /*
@@ -66,8 +66,9 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
     }
 
     [PunRPC]
-    private void CallbackRPC_SharingSkillResources(string[] keyName)
+    private void CallbackRPC_SharingSkillResources(string id, string[] keyName)
     {
+        string temp = null;
         for (int i = 0; i < keyName.Length; i++)
         {
             //GameObject tempObj = PhotonNetwork.Instantiate("SkillEffect/" + keyName[i], Vector3.zero, Resources.Load<GameObject>("SkillEffect/" + keyName[i]).transform.rotation);
@@ -76,15 +77,22 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
             tempObj.name = "SkillEffect " + tempObj.name;
             tempObj.SetActive(false);
 
-            skillPool.Add(PhotonNetwork.LocalPlayer.UserId + keyName[i], tempObj);
+            temp = id + keyName[i];
+            if (skillPool.ContainsKey(temp))
+            {
+                Debug.Log("Already Carried Resources.. ID : " + temp + " ACTOR : " + PhotonNetwork.LocalPlayer.ActorNumber + " VALUE : " + skillPool[temp]);
+                continue;
+            }
+            skillPool.Add(temp, tempObj);
         }
     }
-
     private void Update()
     {
-        //Debug
-        if (Input.GetKeyDown(KeyCode.Alpha1))
-            foreach (var item in skillPool) Debug.Log(item.Key + " = " + item.Value.ToString());
+        if(Input.GetKeyDown(KeyCode.Alpha1))
+        foreach(var item in skillPool)
+        {
+            Debug.Log(item.Value.name + "'s " + item.Key);
+        }
     }
 
     /// <summary>
@@ -92,23 +100,19 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
     /// </summary>
     /// <param name="skillKeyName">활성화하고자 하는 스킬 이펙트 키</param>
     /// <param name="skillPos">활성화하고자 하는 위치</param>
-    /// <param name="isParent">이펙트의 부모 종속 여부</param>
-    public void SetActive_SkillEffect(string skillKeyName, Transform skillTr, bool isParent = false)
+    /// <param name="parentTr">이펙트의 부모 Default Null</param>
+    public void SetActive_SkillEffect(string skillKeyName, Transform skillTr, Transform parentTr = null)
     {
         //tempObj.SetActive(true);
         //ParticleSystem particle = tempObj.GetComponent<ParticleSystem>();
         //if (particle != null) particle.Play();
-
-        if (isParent)
+        string fullKeyName = PhotonNetwork.LocalPlayer.UserId + PhotonNetwork.LocalPlayer.ActorNumber + skillKeyName;
+        if (parentTr != null)
         {
-            GameObject tempObj = skillPool[PhotonNetwork.LocalPlayer.UserId + skillKeyName];
-            if (tempObj != null)
-            {
-                tempObj.transform.parent = skillTr;
-            }
+            if (parentTr.GetComponent<Player>()) skillPool[fullKeyName].transform.parent = parentTr;
+            if (parentTr.GetComponent<PlayerProjectile>()) photonView.RPC("CallbackRPC_Effect_SetParentProjectile", RpcTarget.AllBuffered, skillTr.position, parentTr.GetComponent<PhotonView>().ViewID, fullKeyName);
         }
-
-        photonView.RPC("CallbackRPC_ActiveParticle", RpcTarget.All, skillKeyName, skillTr.position, skillTr.eulerAngles);
+        photonView.RPC("CallbackRPC_ActiveParticle", RpcTarget.All, fullKeyName, skillTr.position, skillTr.eulerAngles);
     }
 
     /// <summary>
@@ -116,24 +120,42 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
     /// </summary>
     public GameObject Get_SkillEffectObj(string skillKeyName)
     {
-        return skillPool[PhotonNetwork.LocalPlayer.UserId + skillKeyName];
+        string fullKeyName = PhotonNetwork.LocalPlayer.UserId + PhotonNetwork.LocalPlayer.ActorNumber + skillKeyName;
+        return skillPool[fullKeyName];
     }
 
     public void SetUnActive_SkillEffect(string skillKeyName)
     {
-        photonView.RPC("CallbackRPC_UnActiveParticle", RpcTarget.All, skillKeyName);
+        string fullKeyName = PhotonNetwork.LocalPlayer.UserId + PhotonNetwork.LocalPlayer.ActorNumber + skillKeyName;
+        photonView.RPC("CallbackRPC_UnActiveParticle", RpcTarget.All, fullKeyName);
+    }
+
+    /// <summary>
+    /// 이펙트 오브젝트의 부모를 지정합니다.
+    /// </summary>
+    /// <param name="projViewId">지정하고자 하는 포톤 뷰 아이디 (프로젝타일)</param>
+    /// <param name="fullKeyName">스킬 이펙트 풀의 키 이름 (풀네임)</param>
+    [PunRPC]
+    private void CallbackRPC_Effect_SetParentProjectile(Vector3 skillPos, int projViewId, string fullKeyName)
+    {
+        var view = PhotonView.Find(projViewId);
+        view.transform.position = skillPos;
+
+        GameObject effectObj = skillPool[fullKeyName];
+        effectObj.transform.parent = view.transform;
+        effectObj.transform.localPosition = Vector3.zero;
     }
 
     /// <summary>
     /// [RPC] 스킬 이펙트 활성화
     /// </summary>
     [PunRPC]
-    private void CallbackRPC_ActiveParticle(string skillKeyName, Vector3 skillPos, Vector3 skillEuler)
+    private void CallbackRPC_ActiveParticle(string fullKeyName, Vector3 skillPos, Vector3 skillEuler)
     {
-        GameObject tempObj = skillPool[PhotonNetwork.LocalPlayer.UserId + skillKeyName];
+        GameObject tempObj = skillPool[fullKeyName];
         if (tempObj == null)
         {
-            Debug.Log("Skill Key Name {" + skillKeyName + "} is wrong or Not Pooled.");
+            return;
         }
 
         tempObj.transform.position = skillPos;
@@ -141,10 +163,10 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
         float tempx = tempObj.transform.eulerAngles.x;
         tempObj.transform.eulerAngles = Vector3.zero;
         tempObj.transform.eulerAngles = new Vector3(tempx, 0, skillEuler.y - tempx * 2);
-        
+
         //Transform은 Parameter로 사용할 수 없다.
         //if (isParent) tempObj.transform.parent = skillTr;
-
+        
         if (!tempObj.activeInHierarchy) tempObj.SetActive(true);
 
         ParticleSystem particle = tempObj.GetComponent<ParticleSystem>();
@@ -155,13 +177,13 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
     /// [RPC] 스킬 이펙트 비활성화
     /// </summary>
     [PunRPC]
-    private void CallbackRPC_UnActiveParticle(string skillKeyName)
+    private void CallbackRPC_UnActiveParticle(string fullKeyName)
     {
         //GameObject tempObj = skillPool[skillKeyName];
-        GameObject tempObj = skillPool[PhotonNetwork.LocalPlayer.UserId + skillKeyName];
+        GameObject tempObj = skillPool[fullKeyName];
         if (tempObj == null)
         {
-            Debug.Log("Skill Key Name {" + skillKeyName + "} is wrong or Not Pooled.");
+            return;
         }
 
         tempObj.transform.parent = null;

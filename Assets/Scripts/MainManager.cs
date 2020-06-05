@@ -147,6 +147,28 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
         //playerObj.GetComponent<Player>().SetAnimatorComponent();
         parentPlayer.SetAnimatorComponent(childAnim);
     }
+    
+    public void Set_ActiveProjectile(GameObject target, bool value)
+    {
+        if(value)
+        {
+            target.transform.position = target.GetComponent<PlayerProjectile>().Get_PlayerTr().position + Vector3.up;
+            photonView.RPC("CallbackRPC_ActiveObject", RpcTarget.All, target.GetComponent<PhotonView>().ViewID, value);
+            target.GetComponent<PlayerProjectile>().SetPlay_Missile();
+        }
+        else
+            photonView.RPC("CallbackRPC_ActiveObject", RpcTarget.All, target.GetComponent<PhotonView>().ViewID, value);
+
+    }
+
+    [PunRPC]
+    private void CallbackRPC_ActiveObject(int viewId, bool value)
+    {
+        var tempView = PhotonView.Find(viewId);
+        if (tempView == null) return;
+        GameObject tempObj = tempView.gameObject;
+        tempObj.SetActive(value);
+    }
 
     void IPunObservable.OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {

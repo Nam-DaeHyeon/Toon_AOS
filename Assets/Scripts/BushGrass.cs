@@ -22,6 +22,7 @@ public class BushGrass : MonoBehaviourPun, IPunObservable
                 if (_innerPlayers[i].Equals(tempPlayer)) continue;
                 //_innerPlayers[i]._animator.gameObject.SetActive(true);
                 _innerPlayers[i]._skinRender.material.SetColor("_Color", new Color(1, 1, 1, 0.43f));
+                _innerPlayers[i]._weaponRender.material.SetColor("_Color", new Color(1, 1, 1, 0.43f));
                 _innerPlayers[i].UI_WorldCvs.gameObject.SetActive(true);
             }
         }
@@ -43,6 +44,7 @@ public class BushGrass : MonoBehaviourPun, IPunObservable
                 //_innerPlayers[i]._animator.gameObject.SetActive(false);
                 //_innerPlayers[i]._skinRender.material.SetColor("_Color", new Color(1, 1, 1, 0));
                 _innerPlayers[i]._skinRender.material.SetColor("_Color", new Color(1, 1, 1, 0));
+                _innerPlayers[i]._weaponRender.material.SetColor("_Color", new Color(1, 1, 1, 0));
                 _innerPlayers[i].UI_WorldCvs.gameObject.SetActive(false);
             }
         }

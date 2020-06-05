@@ -1,8 +1,9 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Photon.Pun;
 
-public class Skill : MonoBehaviour
+public class Skill : MonoBehaviourPun
 {
     /// <summary>
     /// 재사용 대기시간 (기본값 1)
@@ -97,7 +98,7 @@ public class Skill : MonoBehaviour
     {
         if (skillLevel == 0) return 0;
         if (damage == null) return 0;
-        if (damage.Length < skillLevel) return 0;
+
         return damage[skillLevel - 1];
     }
 
@@ -105,7 +106,8 @@ public class Skill : MonoBehaviour
     {
         if (skillLevel == 0) return 0;
         if (mdamage == null) return 0;
-        if (mdamage.Length < skillLevel) return 0;
+
         return mdamage[skillLevel - 1];
     }
+
 }

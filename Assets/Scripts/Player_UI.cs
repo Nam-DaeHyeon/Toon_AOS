@@ -132,6 +132,14 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     }
 
     /// <summary>
+    /// 투사체 방향을 지정할 라인렌더러의 포워딩 노멀을 반환합니다.
+    /// </summary>
+    public Vector3 GetForwordDir_LineRender()
+    {
+        return _lineObj.transform.forward;
+    }
+
+    /// <summary>
     /// 라인 렌더러를 활성화합니다.
     /// </summary>
     public void Draw_LineRender()
