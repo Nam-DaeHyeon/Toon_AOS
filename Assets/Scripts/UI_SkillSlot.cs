@@ -127,6 +127,8 @@ public class UI_SkillSlot : MonoBehaviour
 
             yield return null;
         }
+        _leftTime = 0;
+        _imgCoolTime.fillAmount = _leftTime / setSkill.coolTime;
     }
 
     /// <summary>

@@ -53,8 +53,6 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
         SetSpawn_Player();
         //if(photonView.IsMine) Add_EffectResource(GameManager.USER_CHARACTER);
 
-        //자신의 캐릭터 이펙트 풀링
-        Add_EffectResource(GameManager.USER_CHARACTER);
     }
 
     private void SetSpawn_Player()
@@ -71,44 +69,50 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
         playerObj.GetComponent<Player>()._cursorObj = cursorObjSample;
         playerObj.GetComponent<Player>().Set_InitLineRendererObj(lineObjSample);
         
-        photonView.RPC("CallbackRPC_CreateCharacter", RpcTarget.AllBuffered);
+        photonView.RPC("CallbackRPC_CreateCharacter", RpcTarget.AllBuffered, playerObj.GetComponent<PhotonView>().ViewID, GameManager.USER_CHARACTER);
         
-        photonView.RPC("CallbackRPC_SetParentCharacter", RpcTarget.AllBuffered);
+        //photonView.RPC("CallbackRPC_SetParentCharacter", RpcTarget.AllBuffered);
+
+        //자신의 캐릭터 이펙트 풀링
+        Add_EffectResource(GameManager.USER_CHARACTER);
     }
 
     /// <summary>
     /// RPC 동기화 : 캐릭터 오브젝트 생성
     /// </summary>
     [PunRPC]
-    private void CallbackRPC_CreateCharacter()
+    private void CallbackRPC_CreateCharacter(int viewId, string Character)
     {
         //중복 생성 차단
-        if (!playerObj.GetComponent<Player>().GetNullCheck_Animator()) return;
+        //if (!playerObj.GetComponent<Player>().GetNullCheck_Animator()) return;
+        //if (!photonView.IsMine) return;
 
         childChar = null;
-        switch (GameManager.USER_CHARACTER)
+        //switch (GameManager.USER_CHARACTER)
+        switch (Character)
         {
             default:
             case "BEAR":
-                //childChar = Instantiate(Resources.Load<GameObject>("Toon_Bear_A"));
+                childChar = Instantiate(Resources.Load<GameObject>("Toon_Bear_A"));
                 //sltChar = PhotonNetwork.Instantiate(Resources.Load<GameObject>("Toon_Bear_A").name, playerObj.transform.position, playerObj.transform.rotation);
-                childChar = PhotonNetwork.Instantiate("Toon_Bear_A", playerObj.transform.position, playerObj.transform.rotation);
+                //childChar = PhotonNetwork.Instantiate("Toon_Bear_A", playerObj.transform.position, playerObj.transform.rotation);
                 break;
             case "RABBIT":
-                //childChar = Instantiate(Resources.Load<GameObject>("Toon_Rabbit_A"));
-                childChar = PhotonNetwork.Instantiate("Toon_Rabbit_A", playerObj.transform.position, playerObj.transform.rotation);
+                childChar = Instantiate(Resources.Load<GameObject>("Toon_Rabbit_A"));
+                //childChar = PhotonNetwork.Instantiate("Toon_Rabbit_A", playerObj.transform.position, playerObj.transform.rotation);
                 break;
             case "CAT":
-                //childChar = Instantiate(Resources.Load<GameObject>("Toon_Cat_D"));
-                childChar = PhotonNetwork.Instantiate("Toon_Cat_D", playerObj.transform.position, playerObj.transform.rotation);
+                childChar = Instantiate(Resources.Load<GameObject>("Toon_Cat_D"));
+                //childChar = PhotonNetwork.Instantiate("Toon_Cat_D", playerObj.transform.position, playerObj.transform.rotation);
                 break;
             case "CHIPMUNK":
-                //childChar = Instantiate(Resources.Load<GameObject>("Toon_Chipmunk"));
-                childChar = PhotonNetwork.Instantiate("Toon_Chipmunk", playerObj.transform.position, playerObj.transform.rotation);
+                childChar = Instantiate(Resources.Load<GameObject>("Toon_Chipmunk"));
+                //childChar = PhotonNetwork.Instantiate("Toon_Chipmunk", playerObj.transform.position, playerObj.transform.rotation);
                 break;
         }
 
         //SetParent(playerObj.GetComponent<Player>(), childChar.GetComponent<Animator>());
+        SetParent(viewId, childChar.GetComponent<Animator>());
     }
 
     /// <summary>
@@ -131,28 +135,33 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
                 tempid2 /= 10;
                 if (tempid == tempid2)
                 {
-                    SetParent(allPlayers[i], allAnims[j]);
+                    //SetParent(allPlayers[i], allAnims[j]);
                     break;
                 }
             }
         }
     }
 
-    private void SetParent(Player parentPlayer, Animator childAnim)
+    //private void SetParent(Player parentPlayer, Animator childAnim)
+    private void SetParent(int viewId, Animator childAnim)
     {
-        childAnim.transform.SetParent(parentPlayer.transform);
+        Transform parentPlayerObj = PhotonView.Find(viewId).transform;
+
+        //childAnim.transform.SetParent(parentPlayer.transform);
+        childAnim.transform.SetParent(parentPlayerObj);
         childAnim.transform.localPosition = Vector3.zero;
         childAnim.transform.rotation = Quaternion.Euler(0, Random.Range(0, 360), 0);
-
-        //playerObj.GetComponent<Player>().SetAnimatorComponent();
-        parentPlayer.SetAnimatorComponent(childAnim);
+        
+        //parentPlayer.SetAnimatorComponent(childAnim);
+        parentPlayerObj.GetComponent<Player>().SetAnimatorComponent(childAnim);
     }
     
     public void Set_ActiveProjectile(GameObject target, bool value)
     {
         if(value)
         {
-            target.transform.position = target.GetComponent<PlayerProjectile>().Get_PlayerTr().position + Vector3.up;
+            Vector3 skillPos = target.GetComponent<PlayerProjectile>().Get_PlayerTr().position;
+            target.transform.position = new Vector3(skillPos.x, target.transform.position.y, skillPos.z) + Vector3.up;
             photonView.RPC("CallbackRPC_ActiveObject", RpcTarget.All, target.GetComponent<PhotonView>().ViewID, value);
             target.GetComponent<PlayerProjectile>().SetPlay_Missile();
         }

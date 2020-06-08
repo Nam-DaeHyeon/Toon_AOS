@@ -959,8 +959,8 @@ GameObject:
   - component: {fileID: 180678488658688952}
   - component: {fileID: 3121263057319926493}
   - component: {fileID: 3625699555713023677}
-  - component: {fileID: -1022761611575433609}
   - component: {fileID: 2909334224132227229}
+  - component: {fileID: -1022761611575433609}
   m_Layer: 8
   m_Name: Toon_Chipmunk
   m_TagString: Untagged
@@ -1059,6 +1059,20 @@ MonoBehaviour:
   precomputeOutline: 0
   bakeKeys: []
   bakeValues: []
+--- !u!114 &2909334224132227229
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4755144940028225758}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51ef3a59e8344574a92cebd96ca13a2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  skinRender: {fileID: 4755144940016832322}
+  weaponRender: {fileID: 370397396940475679}
 --- !u!114 &-1022761611575433609
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1095,20 +1109,6 @@ MonoBehaviour:
   m_SynchronizeLayers:
   - SynchronizeType: 2
     LayerIndex: 0
---- !u!114 &2909334224132227229
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4755144940028225758}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 51ef3a59e8344574a92cebd96ca13a2b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  skinRender: {fileID: 4755144940016832322}
-  weaponRender: {fileID: 370397396940475679}
 --- !u!1 &4755144940028273074
 GameObject:
   m_ObjectHideFlags: 0

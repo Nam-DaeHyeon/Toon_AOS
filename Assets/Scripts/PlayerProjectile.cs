@@ -73,6 +73,7 @@ public class PlayerProjectile : MonoBehaviourPun, IPunObservable
     /// <returns></returns>
     private bool Check_InSkillArea(Vector3 targetPos)
     {
+        Debug.Log(_setSkill.skillAngle);
         //일직선으로 날아가는 또는 플레이어 주변에서 원형으로 폭발하는 스킬은 각도 계산을 생략한다.
         if (_setSkill.skillAngle % 360 == 0) return true;
 
@@ -132,7 +133,8 @@ public class PlayerProjectile : MonoBehaviourPun, IPunObservable
 
     public void Add_RigidBody()
     {
-        photonView.RPC("CallbackRPC_AddRigidBody", RpcTarget.AllBuffered);
+        //런타임 중에 null 에러가 빈번히 발생하여 미리 생성 처리함
+        //photonView.RPC("CallbackRPC_AddRigidBody", RpcTarget.AllBuffered);
     }
 
     [PunRPC]
@@ -187,9 +189,7 @@ public class PlayerProjectile : MonoBehaviourPun, IPunObservable
 
     private void OnTriggerEnter(Collider other)
     {
-        if (!photonView.IsMine) return;
-
-        //Debug.Log(other.name + " (" + LayerMask.LayerToName(other.gameObject.layer) + ")");
+        Debug.Log(other.name + " (" + LayerMask.LayerToName(other.gameObject.layer) + ")");
         switch(myOption)
         {
             default:
@@ -209,9 +209,10 @@ public class PlayerProjectile : MonoBehaviourPun, IPunObservable
         Player colplayer = other.GetComponent<Player>();
         if (colplayer == null) return;
         if (colplayer.photonView.IsMine) return;
-
+        
         if (Check_InSkillArea(colplayer.transform.position))
         {
+            if (colliderPlayers.Contains(colplayer)) return;
             colliderPlayers.Add(colplayer);
 
             colplayer.TakeDamage(_setSkill.Get_EffectiveDamage());

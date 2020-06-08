@@ -1463,8 +1463,8 @@ GameObject:
   - component: {fileID: 8543898331262062131}
   - component: {fileID: 6818160482239092377}
   - component: {fileID: 5583824387288252815}
-  - component: {fileID: -8620711697413099979}
   - component: {fileID: 8096433535845453073}
+  - component: {fileID: -8620711697413099979}
   m_Layer: 8
   m_Name: Toon_Rabbit_A
   m_TagString: Untagged
@@ -1563,6 +1563,20 @@ MonoBehaviour:
   precomputeOutline: 0
   bakeKeys: []
   bakeValues: []
+--- !u!114 &8096433535845453073
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7880994554279277201}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51ef3a59e8344574a92cebd96ca13a2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  skinRender: {fileID: 7880994554274049983}
+  weaponRender: {fileID: 8573013543156465087}
 --- !u!114 &-8620711697413099979
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1590,23 +1604,12 @@ MonoBehaviour:
   - Type: 9
     SynchronizeType: 2
     Name: HIT
+  - Type: 9
+    SynchronizeType: 0
+    Name: ATTACK_LOOP
   m_SynchronizeLayers:
   - SynchronizeType: 2
     LayerIndex: 0
---- !u!114 &8096433535845453073
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7880994554279277201}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 51ef3a59e8344574a92cebd96ca13a2b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  skinRender: {fileID: 7880994554274049983}
-  weaponRender: {fileID: 8573013543156465087}
 --- !u!1 &7880994554279281429
 GameObject:
   m_ObjectHideFlags: 0

@@ -9,7 +9,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     [SerializeField] UI_SkillSlot[] _skillSlots;
     [SerializeField] UI_SkillDesc _skillDesc;
     public Canvas UI_WorldCvs;
-    
+    public Canvas UI_OverlayCvs;
+
     /// <summary>
     /// 스킬 공격 시, 공격 범위를 가시화 해주기 위한 라인렌더러 오브젝트
     /// </summary>
@@ -21,41 +22,42 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     /// <summary>
     /// 캐릭터별 스킬을 등록합니다.
     /// </summary>
-    private void SetInit_MySkillSet()
+    private void SetInit_MySkillSet(int viewId)
     {
+        Player target = PhotonView.Find(viewId).GetComponent<Player>();
+
         switch (GameManager.USER_CHARACTER)
         {
             default: //BEAR
-                _skillSlots[0].SetInit_Skill(_skillSlots[0].gameObject.AddComponent<sk_Bear01_Bash>());
-                _skillSlots[1].SetInit_Skill(_skillSlots[1].gameObject.AddComponent<sk_Bear02_Dash>());
-                _skillSlots[2].SetInit_Skill(_skillSlots[2].gameObject.AddComponent<sk_Bear03_Guard>());
-                _skillSlots[3].SetInit_Skill(_skillSlots[3].gameObject.AddComponent<sk_Bear04_Frenzy>());
+                target._skillSlots[0].SetInit_Skill(target._skillSlots[0].gameObject.AddComponent<sk_Bear01_Bash>());
+                target._skillSlots[1].SetInit_Skill(target._skillSlots[1].gameObject.AddComponent<sk_Bear02_Dash>());
+                target._skillSlots[2].SetInit_Skill(target._skillSlots[2].gameObject.AddComponent<sk_Bear03_Guard>());
+                target._skillSlots[3].SetInit_Skill(target._skillSlots[3].gameObject.AddComponent<sk_Bear04_Frenzy>());
                 break;
             case "RABBIT":
-                _skillSlots[0].SetInit_Skill(_skillSlots[0].gameObject.AddComponent<sk_Rabbit01_IceArrow>());
-                _skillSlots[1].SetInit_Skill(_skillSlots[1].gameObject.AddComponent<sk_Rabbit02_Heal>());
-                _skillSlots[2].SetInit_Skill(_skillSlots[2].gameObject.AddComponent<sk_Rabbit03_Barrier>());
-                _skillSlots[3].SetInit_Skill(_skillSlots[3].gameObject.AddComponent<sk_Rabbit04_Blizard>());
+                target._skillSlots[0].SetInit_Skill(target._skillSlots[0].gameObject.AddComponent<sk_Rabbit01_IceArrow>());
+                target._skillSlots[1].SetInit_Skill(target._skillSlots[1].gameObject.AddComponent<sk_Rabbit02_Heal>());
+                target._skillSlots[2].SetInit_Skill(target._skillSlots[2].gameObject.AddComponent<sk_Rabbit03_Barrier>());
+                target._skillSlots[3].SetInit_Skill(target._skillSlots[3].gameObject.AddComponent<sk_Rabbit04_Blizard>());
                 break;
             case "CHIPMUNK":
-                _skillSlots[0].SetInit_Skill(_skillSlots[0].gameObject.AddComponent<sk_Chipmunk01_Stab>());
-                _skillSlots[1].SetInit_Skill(_skillSlots[1].gameObject.AddComponent<sk_Chipmunk02_Hiding>());
-                _skillSlots[2].SetInit_Skill(_skillSlots[2].gameObject.AddComponent<sk_Chipmunk03_Leap>());
-                _skillSlots[3].SetInit_Skill(_skillSlots[3].gameObject.AddComponent<sk_Chipmunk04_GravityBoom>());
+                target._skillSlots[0].SetInit_Skill(target._skillSlots[0].gameObject.AddComponent<sk_Chipmunk01_Stab>());
+                target._skillSlots[1].SetInit_Skill(target._skillSlots[1].gameObject.AddComponent<sk_Chipmunk02_Hiding>());
+                target._skillSlots[2].SetInit_Skill(target._skillSlots[2].gameObject.AddComponent<sk_Chipmunk03_Leap>());
+                target._skillSlots[3].SetInit_Skill(target._skillSlots[3].gameObject.AddComponent<sk_Chipmunk04_GravityBoom>());
                 break;
             case "CAT":
-                _skillSlots[0].SetInit_Skill(_skillSlots[0].gameObject.AddComponent<sk_Cat01_PoisonArrow>());
-                _skillSlots[1].SetInit_Skill(_skillSlots[1].gameObject.AddComponent<sk_Cat02_Hallucination>());
-                _skillSlots[2].SetInit_Skill(_skillSlots[2].gameObject.AddComponent<sk_Cat03_Trap>());
-                _skillSlots[3].SetInit_Skill(_skillSlots[3].gameObject.AddComponent<sk_Cat04_Snipe>());
+                target._skillSlots[0].SetInit_Skill(target._skillSlots[0].gameObject.AddComponent<sk_Cat01_PoisonArrow>());
+                target._skillSlots[1].SetInit_Skill(target._skillSlots[1].gameObject.AddComponent<sk_Cat02_Hallucination>());
+                target._skillSlots[2].SetInit_Skill(target._skillSlots[2].gameObject.AddComponent<sk_Cat03_Trap>());
+                target._skillSlots[3].SetInit_Skill(target._skillSlots[3].gameObject.AddComponent<sk_Cat04_Snipe>());
                 break;
         }
 
-        if (!photonView.IsMine) return;
         for (int i = 0; i < _skillSlots.Length; i++)
         {
-            _projectiles[i].SetInit_Parameters(_skillSlots[i].Get_Skill(), transform, _animator.transform);
-            _skillSlots[i].SetInit_Projectile(_projectiles[i]);
+            _projectiles[i].SetInit_Parameters(target._skillSlots[i].Get_Skill(), transform, _animator.transform);
+            target._skillSlots[i].SetInit_Projectile(_projectiles[i]);
         }
     }
     
@@ -83,14 +85,16 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     /// <summary>
     /// 스킬포인트를 얻었습니다.
     /// </summary>
-    public void GetSkillPoint()
+    public void GetSkillPoint(int viewId)
     {
-        if (!photonView.IsMine) return;
-
-        _skillPoint++;
-        for(int i =0;i <_skillSlots.Length;i++)
+        if (photonView.ViewID == viewId)
         {
-            _skillSlots[i].Show_LevelUPButton();
+            _skillPoint++;
+
+            for (int i = 0; i < _skillSlots.Length; i++)
+            {
+                _skillSlots[i].Show_LevelUPButton();
+            }
         }
     }
 

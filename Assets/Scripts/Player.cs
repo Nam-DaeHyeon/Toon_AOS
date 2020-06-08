@@ -48,6 +48,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
 
     float _speed = 5f;  //이동속도
 
+    public bool isInvincible { get; set; } = false; //무적 상태
+
     public int _skillPoint { set; get; } = 0;
     #endregion
 
@@ -105,19 +107,16 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
 
     private void Start()
     {
-        Set_InitParameter();
-        //photonView.RPC("CallbackRPC_InitParameter", RpcTarget.AllBuffered);
+        //Set_InitParameter();
 
         if (photonView.IsMine)
         {
             //photonView.RPC("CallbackRPC_SetInitParameter", RpcTarget.All);
 
+            photonView.RPC("CallbackRPC_InitParameter", RpcTarget.AllBuffered, photonView.ViewID);
+
             StartCoroutine(IE_BaseController());
             StartCoroutine(IE_PlayerInputKeyManager());
-        }
-        else
-        {
-            _mainCamera.gameObject.SetActive(false);
         }
 
         m_ready = true;
@@ -133,40 +132,46 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     /// <summary>
     /// 초기 플레이어의 능력치를 동기화합니다.
     /// </summary>
-    private void Set_InitParameter()
-    //private void CallbackRPC_InitParameter()
+    //private void Set_InitParameter()
+    [PunRPC]
+    private void CallbackRPC_InitParameter(int viewId)
     {
+        var player = PhotonView.Find(viewId).GetComponent<Player>();
+        
         //캐릭터에 따른 능력치 설정
 
         //캐릭터별 스킬 설정
-        SetInit_MySkillSet();
-        GetSkillPoint();
-        Hide_SkillDesc();
+        player.SetInit_MySkillSet(viewId);
+        player.Hide_SkillDesc();
 
-        //체력 초기화
+        //능력치 초기화 및 시작 설정
         _currHP = _maxHP;
+        GetSkillPoint(viewId);
+        isInvincible = false;
 
         //컨트롤러 스테이트 초기화
-        _myState = PLAYER_STATE.IDLE;
+        player._myState = PLAYER_STATE.IDLE;
 
         //트리거 & 변수 초기화
-        isMove = false;
-        distance = 0f;
-        dir = Vector3.zero;
-        atkToggle = false;
-        atkTargetPlayer = null;
+        player.isMove = false;
+        player.distance = 0f;
+        player.dir = Vector3.zero;
+        player.atkToggle = false;
+        player.atkTargetPlayer = null;
 
         //로컬 쉐이더 초기화
-        _skinRender.material.shader = baseShader;
-        _weaponRender.material.SetColor("_Color", new Color(1, 1, 1, 1));
+        player._skinRender.material.shader = baseShader;
+        player._weaponRender.material.SetColor("_Color", new Color(1, 1, 1, 1));
 
         if (photonView.IsMine)
         {
-            _cursorObj.SetActive(false);
-            _lineObj.SetActive(false);
+            player._cursorObj.SetActive(false);
+            player._lineObj.SetActive(false);
         }
         else
         {
+            _mainCamera.gameObject.SetActive(false);
+            UI_OverlayCvs.gameObject.SetActive(false);
             if (_cursorObj != null) Destroy(_cursorObj.gameObject);
             if (_lineObj != null) Destroy(_lineObj.gameObject);
         }
@@ -231,7 +236,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
                     {
                         isMove = false;
                         //_animator.SetTrigger("IDLE");
-                        photonView.RPC("CallbackRPC_AnimatorTrigger", RpcTarget.All, "IDLE");
+                        photonView.RPC("CallbackRPC_AnimatorTrigger", RpcTarget.All, photonView.ViewID, "IDLE");
                     }
                     else
                     {
@@ -258,7 +263,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
                     if (!isMove)
                     {
                         //_animator.SetTrigger("MOVE");
-                        photonView.RPC("CallbackRPC_AnimatorTrigger", RpcTarget.All, "MOVE");
+                        photonView.RPC("CallbackRPC_AnimatorTrigger", RpcTarget.All, photonView.ViewID, "MOVE");
                     }
                     isMove = true;
 
@@ -277,7 +282,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     #region 플레이어 공격 컨트롤러 코루틴
     private IEnumerator IE_AttackController()
     {
-        photonView.RPC("CallbackRPC_AnimatorTrigger", RpcTarget.All, "ATTACK");
+        photonView.RPC("CallbackRPC_AnimatorTrigger", RpcTarget.All, photonView.ViewID, "ATTACK");
 
         //애니메이션 이벤트 리시버 에러로 인한 코루틴 처리
         StartCoroutine(IE_AnimEvent_Attack());
@@ -375,11 +380,11 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         while(atkToggle)
         {
             //스킬 시전 중일 때에는 타겟팅 기능 일시정지
-            yield return new WaitUntil(() => _myState.Equals(PLAYER_STATE.CAST));
+            yield return new WaitUntil(() => !_myState.Equals(PLAYER_STATE.CAST));
 
             Ray ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
-            if (Physics.Raycast(ray, out hit, 100, LayerMask.GetMask("Default")))
+            if (Physics.Raycast(ray, out hit, 200, LayerMask.GetMask("Default")))
             {
                 if (hit.transform.tag.Equals("Ground"))
                     _cursorObj.transform.position = hit.point;
@@ -429,7 +434,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
                 if (!isMove)
                 {
                     //_animator.SetTrigger("MOVE");
-                    photonView.RPC("CallbackRPC_AnimatorTrigger", RpcTarget.All, "MOVE");
+                    photonView.RPC("CallbackRPC_AnimatorTrigger", RpcTarget.All, photonView.ViewID, "MOVE");
                 }
                 _targetPos = hit.point;
                 isMove = true;
@@ -513,19 +518,20 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     /// </summary>
     public void SetAnimTrigger(string keyName)
     {
-        photonView.RPC("CallbackRPC_AnimatorTrigger", RpcTarget.All, keyName);
+        photonView.RPC("CallbackRPC_AnimatorTrigger", RpcTarget.All, photonView.ViewID, keyName);
     }
 
     /// <summary>
     /// RPC - 특정 애니메이션을 실행시킵니다.
     /// </summary>
     [PunRPC]
-    private void CallbackRPC_AnimatorTrigger(string animTriggerName)
+    private void CallbackRPC_AnimatorTrigger(int viewId, string animTriggerName)
     {
         //if (!photonView.IsMine) return;
 
         //Debug.Log(photonView.ViewID + " AnimTriggered " + animTriggerName);
-        _animator.SetTrigger(animTriggerName);
+        Player player = PhotonView.Find(viewId).GetComponent<Player>();
+        player._animator.SetTrigger(animTriggerName);
     }
 
     /// <summary>
@@ -612,36 +618,60 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     }
 
     /// <summary>
+    /// 플레이어가 체력을 회복합니다.
+    /// </summary>
+    /// <param name="healAmount">회복량. (양수)</param>
+    public void TakeHeal(float healAmount)
+    {
+        if (_currHP < 0) return;
+
+        int endAmount = -1 * (int)healAmount;
+        photonView.RPC("CallbackRPC_SyncHP", RpcTarget.All, endAmount, true);
+    }
+
+    /// <summary>
     /// [RPC] 플레이어 체력 동기화
     /// </summary>
     /// <param name="endDamage"></param>
     [PunRPC]
-    private void CallbackRPC_SyncHP(int endDamage, bool isMagic)
+    private void CallbackRPC_SyncHP(int endDamage, bool isMagic = false)
     {
         int tempDamage = endDamage;
-        if (_currSP > 0)
-        {
-            //잔여 쉴드량이 남을 경우
-            if (_currSP - endDamage > 0)
-            {
-                _currSP -= tempDamage;
-                _imgHPBar.fillAmount = _currSP / _maxSP;
-                return;
-            }
-            else
-            {
-                tempDamage += ((int)_currSP - endDamage);
-                _imgHPBar.color = Color.red;
-            }
-        }
 
-        int endDefence = _defence;
-        if (isMagic) endDefence = _mdefence;
-        tempDamage -= endDamage;
-        if (tempDamage <= 0) tempDamage = 0;    //유효 데미지 없음
+        //일반적인 플레이어를 타격한 경우 (피해량)
+        if (endDamage > 0)
+        {
+            if (_currSP > 0)
+            {
+                //잔여 쉴드량이 남을 경우
+                if (_currSP - endDamage > 0)
+                {
+                    _currSP -= tempDamage;
+                    _imgHPBar.fillAmount = _currSP / _maxSP;
+                    return;
+                }
+                else
+                {
+                    tempDamage += ((int)_currSP - endDamage);
+                    _imgHPBar.color = Color.red;
+                }
+            }
+
+            int endDefence = _defence;
+            if (isMagic) endDefence = _mdefence;
+            tempDamage -= endDefence;
+            if (tempDamage <= 0) tempDamage = 0;    //유효 데미지 없음
+        }
+        //플레이어를 회복한 경우 (회복량)
+        else
+        {
+            
+        }
 
         _currHP -= tempDamage;
         _imgHPBar.fillAmount = _currHP / _maxHP;
+
+        if (_currHP > _maxHP) _currHP = _maxHP;
     }
 
     /// <summary>
@@ -656,7 +686,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         //체력바 업데이트 (+쉴드바 추가)
         _imgHPBar.color = Color.white;
         _imgHPBar.fillAmount = _currSP / _maxSP;
-        photonView.RPC("CallbackRPC_SyncHP", RpcTarget.All, 0);
+        photonView.RPC("CallbackRPC_SyncHP", RpcTarget.All, 0, false);
     }
 
     /// <summary>
@@ -685,7 +715,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
 
         //체력바 업데이트
         _imgHPBar.color = Color.red;
-        photonView.RPC("CallbackRPC_SyncHP", RpcTarget.All, 0);
+        photonView.RPC("CallbackRPC_SyncHP", RpcTarget.All, 0, false);
     }
     #endregion
 
@@ -793,6 +823,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         }
         else
         {
+            if (MainManager.instance.allPlayers == null) return;
+
             //같은 부쉬에 있는 플레이어의 경우 생략
             for (int i = 0; i < MainManager.instance.allPlayers.Length; i++)
             {
@@ -823,14 +855,41 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     }
     #endregion
 
+    public void Set_PlayerLevelUp()
+    {
+        photonView.RPC("CallbackRPC_PlayerLevelUP", RpcTarget.All, photonView.ViewID);
+    }
+
     /// <summary>
     /// [RPC] 플레이어 레벨업 동기화
     /// </summary>
     [PunRPC]
-    private void CallbackRPC_PlayerLevelUP()
+    private void CallbackRPC_PlayerLevelUP(int viewId)
     {
-        _level++;
-        GetSkillPoint();
+        Player target = PhotonView.Find(viewId).GetComponent<Player>();
+        if (target._level >= 18) return;
+        target._level++;
+        target.GetSkillPoint(viewId);
+    }
+
+    /// <summary>
+    /// 이동관련이 아닌 강제적으로 위치를 조정합니다.
+    /// </summary>
+    /// <param name="newPos">새 좌표</param>
+    public void ForceSetPosition(Vector3 newPos)
+    {
+        photonView.RPC("CallbackRPC_ForceSyncPosition", RpcTarget.All, newPos);
+    }
+
+    /// <summary>
+    /// [RPC] 플레이어 위치 값 강제 조정
+    /// </summary>
+    /// <param name="viewId">플레이어 뷰아이디</param>
+    /// <param name="newPos">좌표 조정 값. 이 좌표로 재설정합니다.</param>
+    [PunRPC]
+    private void CallbackRPC_ForceSyncPosition(Vector3 newPos)
+    {
+        transform.position = newPos;
     }
 
     void IPunObservable.OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
@@ -857,6 +916,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
 
     private void OnMouseEnter()
     {
+        if (_animator == null) return;
+
         //다른 플레이어에게 마우스를 올렸을 때
         if (!photonView.IsMine)
         {
@@ -874,11 +935,15 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
 
     private void OnMouseOver()
     {
+        if (_animator == null) return;
+
         if (_skinRender.material.GetColor("_Color").a == 0) OnMouseExit();
     }
 
     private void OnMouseExit()
     {
+        if (_animator == null) return;
+
         _animator.GetComponent<Outline>().enabled = false;
     }
 }

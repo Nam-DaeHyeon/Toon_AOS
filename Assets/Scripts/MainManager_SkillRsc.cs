@@ -86,14 +86,6 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
             skillPool.Add(temp, tempObj);
         }
     }
-    private void Update()
-    {
-        if(Input.GetKeyDown(KeyCode.Alpha1))
-        foreach(var item in skillPool)
-        {
-            Debug.Log(item.Value.name + "'s " + item.Key);
-        }
-    }
 
     /// <summary>
     /// 특정 스킬 이펙트를 활성화합니다.
@@ -158,12 +150,16 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
             return;
         }
 
+        //tempObj.transform.position = new Vector3(skillPos.x, tempObj.transform.position.y, skillPos.z);
         tempObj.transform.position = skillPos;
         //tempObj.transform.eulerAngles = Vector3.zero;
         float tempx = tempObj.transform.eulerAngles.x;
-        tempObj.transform.eulerAngles = Vector3.zero;
-        tempObj.transform.eulerAngles = new Vector3(tempx, 0, skillEuler.y - tempx * 2);
 
+        if (tempObj.transform.eulerAngles.x + tempObj.transform.eulerAngles.y + tempObj.transform.eulerAngles.z != 0)
+        {
+            tempObj.transform.eulerAngles = Vector3.zero;
+            tempObj.transform.eulerAngles = new Vector3(tempx, 0, skillEuler.y - tempx * 2);
+        }
         //Transform은 Parameter로 사용할 수 없다.
         //if (isParent) tempObj.transform.parent = skillTr;
         
@@ -201,6 +197,38 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
             //Debug.Log(photonView.ViewID + "'s particle system : " + temps[i].name + " ==> " + parentname);
             if (temps[i].transform.parent != null) continue;
             temps[i].gameObject.SetActive(false);
+        }
+    }
+
+    public void SkillFunc_PushTarget(Vector3 original, Transform target, float distance, float lerpSpeed, float duration)
+    {
+        photonView.RPC("CallbackRPC_Skill_PushTargetCoroutine", RpcTarget.All, target.GetComponent<PhotonView>().ViewID, original, distance, lerpSpeed, duration);
+    }
+
+    [PunRPC]
+    private void CallbackRPC_Skill_PushTargetCoroutine(int viewId, Vector3 original,  float distance, float lerpSpeed, float duration)
+    {
+        Transform target = PhotonView.Find(viewId).transform;
+        if (target == null) return;
+
+        StartCoroutine(IE_SkillFunc_PushTarget(original, target, distance, lerpSpeed, duration));
+    }
+
+    private IEnumerator IE_SkillFunc_PushTarget(Vector3 original, Transform targetTr, float distance, float lerpSpeed, float duration)
+    {
+        Vector3 pushDir = targetTr.position - original;
+        pushDir.Normalize();
+        pushDir *= distance;
+
+        float timer = duration;
+        while (timer > 0)
+        {
+            if (targetTr == null) yield break;
+            //targetTr.position = Vector3.Lerp(targetTr.position, pushDir, 5 * Time.deltaTime);
+            targetTr.GetComponent<Player>().ForceSetPosition(Vector3.Lerp(targetTr.position, pushDir, 5 * Time.deltaTime));
+
+            timer -= Time.deltaTime;
+            yield return null;
         }
     }
 }

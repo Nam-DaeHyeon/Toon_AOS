@@ -293,8 +293,8 @@ GameObject:
   - component: {fileID: 3424068312231648983}
   - component: {fileID: 2922984674737409037}
   - component: {fileID: 4614643487575043365}
-  - component: {fileID: -2367727254658637226}
   - component: {fileID: 6917143940088265421}
+  - component: {fileID: -2367727254658637226}
   m_Layer: 8
   m_Name: Toon_Cat_D
   m_TagString: Untagged
@@ -393,6 +393,20 @@ MonoBehaviour:
   precomputeOutline: 0
   bakeKeys: []
   bakeValues: []
+--- !u!114 &6917143940088265421
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3157908663262268242}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51ef3a59e8344574a92cebd96ca13a2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  skinRender: {fileID: 3157908663250956372}
+  weaponRender: {fileID: 3067966647327551084}
 --- !u!114 &-2367727254658637226
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -423,20 +437,6 @@ MonoBehaviour:
   m_SynchronizeLayers:
   - SynchronizeType: 2
     LayerIndex: 0
---- !u!114 &6917143940088265421
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3157908663262268242}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 51ef3a59e8344574a92cebd96ca13a2b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  skinRender: {fileID: 3157908663250956372}
-  weaponRender: {fileID: 3067966647327551084}
 --- !u!1 &3157908663262268362
 GameObject:
   m_ObjectHideFlags: 0
