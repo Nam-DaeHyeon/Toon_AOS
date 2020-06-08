@@ -857,6 +857,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
 
     public void Set_PlayerLevelUp()
     {
+        if (!photonView.IsMine) return;
         photonView.RPC("CallbackRPC_PlayerLevelUP", RpcTarget.All, photonView.ViewID);
     }
 
