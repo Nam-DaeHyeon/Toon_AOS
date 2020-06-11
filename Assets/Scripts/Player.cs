@@ -21,7 +21,8 @@ public enum PLAYER_STATE
 {
     IDLE,
     ATTACK,
-    CAST
+    CAST,
+    DEAD
 }
 
 public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
@@ -112,6 +113,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         if (photonView.IsMine)
         {
             //photonView.RPC("CallbackRPC_SetInitParameter", RpcTarget.All);
+            _mainCamera.GetComponent<CameraFilter>().setGray = false;
 
             photonView.RPC("CallbackRPC_InitParameter", RpcTarget.AllBuffered, photonView.ViewID);
 
@@ -161,7 +163,9 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
 
         //로컬 쉐이더 초기화
         player._skinRender.material.shader = baseShader;
-        player._weaponRender.material.SetColor("_Color", new Color(1, 1, 1, 1));
+        player._weaponRender.material.shader = baseShader;
+
+        //player._weaponRender.material.SetColor("_Color", new Color(1, 1, 1, 1));
 
         if (photonView.IsMine)
         {
@@ -204,6 +208,9 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
                 break;
             case PLAYER_STATE.CAST:
                 //StartCoroutine(IE_CastController());
+                break;
+            case PLAYER_STATE.DEAD:
+                
                 break;
         }
     }
@@ -671,6 +678,13 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         _currHP -= tempDamage;
         _imgHPBar.fillAmount = _currHP / _maxHP;
 
+        if(_currHP < 0)
+        {
+            _mainCamera.GetComponent<CameraFilter>().setGray = true;
+            Set_StateMachine(PLAYER_STATE.DEAD);
+            _animator.gameObject.SetActive(false);
+            PhotonNetwork.Instantiate("Grave", transform.position, _animator.transform.rotation);
+        }
         if (_currHP > _maxHP) _currHP = _maxHP;
     }
 
@@ -683,10 +697,25 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         _maxSP = sp;
         _currSP = _maxSP;
 
+        photonView.RPC("CallbackRPC_SyncSP", RpcTarget.All, photonView.ViewID);
+    }
+
+    [PunRPC]
+    private void CallbackRPC_SyncSP(int viewId)
+    {
+        Player target = PhotonView.Find(viewId).GetComponent<Player>();
+
         //체력바 업데이트 (+쉴드바 추가)
-        _imgHPBar.color = Color.white;
-        _imgHPBar.fillAmount = _currSP / _maxSP;
-        photonView.RPC("CallbackRPC_SyncHP", RpcTarget.All, 0, false);
+        if (_maxSP != 0)
+        {
+            target._imgHPBar.color = Color.white;
+            target._imgHPBar.fillAmount = _currSP / _maxSP;
+        }
+        else
+        {
+            target._imgHPBar.color = Color.red;
+            target._imgHPBar.fillAmount = _currHP / _maxHP;
+        }
     }
 
     /// <summary>
@@ -797,7 +826,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     {
         photonView.RPC("CallbackRPC_Hide", RpcTarget.All);
     }
-
+    
     /// <summary>
     /// 투명 상태를 해제합니다.
     /// </summary>
@@ -811,30 +840,36 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     {
         //gameObject.layer = LayerMask.NameToLayer("HidePlayer");
         _skinRender.material.shader = alphaShader;
-        _weaponRender.material.SetColor("_Color", new Color(1, 1, 1, 0));
+        _weaponRender.material.shader = alphaShader;
+        //_weaponRender.material.SetColor("_Color", new Color(1, 1, 1, 0));
         //_skinRender.sharedMaterial.SetColor("_Color", new Color32(255, 255, 255, 110));
 
-        //뒤늦게 들어온 애가 있을 경우 전에 들어온 친구한테 렌더링되도록 업데이트.. allPlayers로 해결...
-        //수풀 안에선 서로를 타겟팅할 수 있도록, 밖에선 안이 타겟팅 못하게.. layerMask 설정 시도...
+        
+        //본인은 불투명하게 표현
         if (photonView.IsMine)
         {
             _skinRender.material.SetColor("_Color", new Color(1, 1, 1, 0.43f));
             _weaponRender.material.SetColor("_Color", new Color(1, 1, 1, 0.43f));
         }
+        //나머지한테는 투명하게 표현
+        //뒤늦게 들어온 애가 있을 경우 전에 들어온 친구한테 렌더링되도록 업데이트.. allPlayers로 해결...
         else
         {
-            if (MainManager.instance.allPlayers == null) return;
+            //if (MainManager.instance.allPlayers == null) return;
+            Player[] allPlayers = GameObject.FindObjectsOfType<Player>();
 
             //같은 부쉬에 있는 플레이어의 경우 생략
-            for (int i = 0; i < MainManager.instance.allPlayers.Length; i++)
+            //for (int i = 0; i < MainManager.instance.allPlayers.Length; i++)
+            for (int i = 0; i < allPlayers.Length; i++)
             {
                 //자신(this) & NULL 예외처리
-                if (MainManager.instance.allPlayers[i].Equals(this)) continue;
+                //if (MainManager.instance.allPlayers[i].Equals(this)) continue;
+                if (allPlayers[i].Equals(this)) continue;
                 if (_currBush == null) continue;
 
-                if (_currBush.Equals(MainManager.instance.allPlayers[i]._currBush))
+                if (_currBush.Equals(allPlayers[i]._currBush))
                 {
-
+                    //안에 있는 플레이어끼리 불투명하게 처리하는 것은 BushGrass.cs 에서 처리
                 }
                 else
                 {
@@ -852,6 +887,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     {
         //gameObject.layer = LayerMask.NameToLayer("Player");
         _skinRender.material.shader = baseShader;
+        _weaponRender.material.shader = baseShader;
+        UI_WorldCvs.gameObject.SetActive(true);
     }
     #endregion
 
@@ -899,6 +936,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         {
             stream.SendNext(GameManager.USER_NICKNAME);
             stream.SendNext(this._imgHPBar.fillAmount);
+            stream.SendNext(_animator);
 
             // We own this player: send the others our data
             stream.SendNext(transform.position);
@@ -908,6 +946,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         {
             _textNickName.text = (string)stream.ReceiveNext();
             this._imgHPBar.fillAmount = (float)stream.ReceiveNext();
+            _animator = (Animator)stream.ReceiveNext();
 
             // Network player, receive data
             this.transform.position = (Vector3)stream.ReceiveNext();

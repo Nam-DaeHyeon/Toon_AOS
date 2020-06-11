@@ -101,8 +101,7 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
         string fullKeyName = PhotonNetwork.LocalPlayer.UserId + PhotonNetwork.LocalPlayer.ActorNumber + skillKeyName;
         if (parentTr != null)
         {
-            if (parentTr.GetComponent<Player>()) skillPool[fullKeyName].transform.parent = parentTr;
-            if (parentTr.GetComponent<PlayerProjectile>()) photonView.RPC("CallbackRPC_Effect_SetParentProjectile", RpcTarget.AllBuffered, skillTr.position, parentTr.GetComponent<PhotonView>().ViewID, fullKeyName);
+            photonView.RPC("CallbackRPC_Effect_SetParentProjectile", RpcTarget.AllBuffered, skillTr.position, parentTr.GetComponent<PhotonView>().ViewID, fullKeyName);
         }
         photonView.RPC("CallbackRPC_ActiveParticle", RpcTarget.All, fullKeyName, skillTr.position, skillTr.eulerAngles);
     }

@@ -73,6 +73,7 @@ MonoBehaviour:
   - CallbackRPC_Effect_SetParentProjectile
   - CallbackRPC_ForceSyncPosition
   - CallbackRPC_Skill_PushTargetCoroutine
+  - CallbackRPC_SyncSP
   DisableAutoOpenWizard: 1
   ShowSettings: 0
   DevRegionSetOnce: 1
