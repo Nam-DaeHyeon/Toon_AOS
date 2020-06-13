@@ -18,7 +18,7 @@ public class Skill : MonoBehaviourPun
     /// <summary>
     /// 스킬 사정거리 / 충돌체 크기 (기본값 5)
     /// </summary>
-    public virtual int skillDistance { set; get; } = 5;
+    public virtual float skillDistance { set; get; } = 5f;
     /// <summary>
     /// 스킬 범위 (기본값 60 Radian)
     /// </summary>

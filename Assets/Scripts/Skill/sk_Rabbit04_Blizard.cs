@@ -9,7 +9,7 @@ public class sk_Rabbit04_Blizard : Skill
     public override float duration { get; set; } = 3f;
 
     public override int skillAngle { get; set; } = 360;
-    public override int skillDistance { get; set; } = 8;
+    public override float skillDistance { get; set; } = 8f;
 
     public override int Get_MaxLevel()
     {

@@ -8,8 +8,26 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
     [Header("Skill_ResourcesPool")]
     Dictionary<string, GameObject> skillPool = new Dictionary<string, GameObject>();
 
+    [Header("Shared Resources Pool")]
+    Dictionary<string, GameObject> effectPool = new Dictionary<string, GameObject>();
+
     /// <summary>
-    /// 스킬 및 이펙트 리소스를 추가합니다.
+    /// 공유 자원 이펙트 리소스를 추가합니다. (폭발, 스턴 등등)
+    /// </summary>
+    private void Add_SharedEffectResources()
+    {
+        string[] effects = new string[] { "TrapHit", "StunEffect" };
+
+        for(int i = 0; i < effects.Length; i++)
+        {
+            GameObject tempObj = Instantiate(Resources.Load<GameObject>("SkillEffect/" + effects[i]));
+            tempObj.SetActive(false);
+            effectPool.Add(effects[i], tempObj);
+        }
+    }
+
+    /// <summary>
+    /// 직업 스킬 이펙트 리소스를 추가합니다.
     /// </summary>
     /// <param name="className"></param>
     private void Add_EffectResource(string className)
@@ -25,13 +43,13 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
                 skills = new string[] { "IceArrowProjectile", "IceArrowHit", "Heal", "Barrier", "Blizard" };
                 break;
             case "CAT":
-                skills = new string[] { "PoisonArrowProjectile", "TrapHit", "SnipeProjectile", "SnipeHit" };
+                skills = new string[] { "PoisonArrowProjectile", "PoisonArrowHit", "TrapHit", "BoomProjectile", "GravityBoom" };
                 break;
             case "CHIPMUNK":
-                skills = new string[] { "Stab", "Hiding", "GravityBoom" };
+                //skills = new string[] { "Stab", "Hiding", "GravityBoom" };
                 break;
         }
-
+        
         //[ISSUE 2] 스킬 이펙트 리소스 공유 문제.. 다른 클라이언트의 리소스를 읽어오질 못한다.
         /*
         for (int i = 0; i < skills.Length; i++)
@@ -88,7 +106,7 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
     }
 
     /// <summary>
-    /// 특정 스킬 이펙트를 활성화합니다.
+    /// 특정 직업 스킬 이펙트를 활성화합니다.
     /// </summary>
     /// <param name="skillKeyName">활성화하고자 하는 스킬 이펙트 키</param>
     /// <param name="skillPos">활성화하고자 하는 위치</param>
@@ -107,7 +125,24 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
     }
 
     /// <summary>
-    /// 특정 스킬 이펙트 오브젝트를 반환합니다.
+    /// 기본 이펙트를 활성화 합니다.
+    /// </summary>
+    /// <param name="effectName">활성화하고자 하는 이펙트 키</param>
+    /// <param name="skillTr">활성화 위치</param>
+    /// <param name="parentTr">이펙트 부모 Default Null</param>
+    public void SetActive_SharedEffect(string effectName, Transform skillTr, Transform parentTr = null)
+    {
+        string fullKeyName = effectName;
+
+        if (parentTr != null)
+        {
+            photonView.RPC("CallbackRPC_Effect_SetParentProjectile", RpcTarget.AllBuffered, skillTr.position, parentTr.GetComponent<PhotonView>().ViewID, fullKeyName);
+        }
+        photonView.RPC("CallbackRPC_ActiveParticle", RpcTarget.All, fullKeyName, skillTr.position, skillTr.eulerAngles);
+    }
+
+    /// <summary>
+    /// 특정 직업 스킬 이펙트 오브젝트를 반환합니다.
     /// </summary>
     public GameObject Get_SkillEffectObj(string skillKeyName)
     {
@@ -132,7 +167,9 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
         var view = PhotonView.Find(projViewId);
         view.transform.position = skillPos;
 
-        GameObject effectObj = skillPool[fullKeyName];
+        GameObject effectObj = (skillPool.ContainsKey(fullKeyName)) ? skillPool[fullKeyName] : effectPool[fullKeyName];
+        if (effectObj == null) return;
+
         effectObj.transform.parent = view.transform;
         effectObj.transform.localPosition = Vector3.zero;
     }
@@ -143,11 +180,8 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
     [PunRPC]
     private void CallbackRPC_ActiveParticle(string fullKeyName, Vector3 skillPos, Vector3 skillEuler)
     {
-        GameObject tempObj = skillPool[fullKeyName];
-        if (tempObj == null)
-        {
-            return;
-        }
+        GameObject tempObj = (skillPool.ContainsKey(fullKeyName)) ? skillPool[fullKeyName] : effectPool[fullKeyName];
+        if (tempObj == null) return;
 
         //tempObj.transform.position = new Vector3(skillPos.x, tempObj.transform.position.y, skillPos.z);
         tempObj.transform.position = skillPos;

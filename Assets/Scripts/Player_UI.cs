@@ -15,7 +15,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     /// 스킬 공격 시, 공격 범위를 가시화 해주기 위한 라인렌더러 오브젝트
     /// </summary>
     GameObject _lineObj;
-    int radiovector = 5;
+    float radiovector = 5f;
     float radioangle = 45f;
 
     #region 스킬 관련
@@ -44,13 +44,13 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
                 target._skillSlots[0].SetInit_Skill(target._skillSlots[0].gameObject.AddComponent<sk_Chipmunk01_Stab>());
                 target._skillSlots[1].SetInit_Skill(target._skillSlots[1].gameObject.AddComponent<sk_Chipmunk02_Hiding>());
                 target._skillSlots[2].SetInit_Skill(target._skillSlots[2].gameObject.AddComponent<sk_Chipmunk03_Leap>());
-                target._skillSlots[3].SetInit_Skill(target._skillSlots[3].gameObject.AddComponent<sk_Chipmunk04_GravityBoom>());
+                target._skillSlots[3].SetInit_Skill(target._skillSlots[3].gameObject.AddComponent<sk_Chipmunk04_Kill>());
                 break;
             case "CAT":
                 target._skillSlots[0].SetInit_Skill(target._skillSlots[0].gameObject.AddComponent<sk_Cat01_PoisonArrow>());
                 target._skillSlots[1].SetInit_Skill(target._skillSlots[1].gameObject.AddComponent<sk_Cat02_Hallucination>());
                 target._skillSlots[2].SetInit_Skill(target._skillSlots[2].gameObject.AddComponent<sk_Cat03_Trap>());
-                target._skillSlots[3].SetInit_Skill(target._skillSlots[3].gameObject.AddComponent<sk_Cat04_Snipe>());
+                target._skillSlots[3].SetInit_Skill(target._skillSlots[3].gameObject.AddComponent<sk_Cat04_GravityBoom>());
                 break;
         }
 
@@ -61,6 +61,11 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         }
     }
     
+    public Skill[] Get_PrivateSkills()
+    {
+        return new Skill[] { _skillSlots[0].GetComponent<Skill>(), _skillSlots[1].GetComponent<Skill>(), _skillSlots[2].GetComponent<Skill>(), _skillSlots[3].GetComponent<Skill>() };
+    }
+
     /// <summary>
     /// 스킬 설명창을 활성화합니다.
     /// </summary>
@@ -129,7 +134,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     /// </summary>
     /// <param name="range">라인 렌더러 길이</param>
     /// <param name="angle">라인 렌더러 생성 각도.</param>
-    public void SetParam_LineRender(int range, int angle)
+    public void SetParam_LineRender(float range, int angle)
     {
         radiovector = range;
         radioangle = angle;

@@ -6,7 +6,7 @@ public class sk_Bear02_Dash : Skill
 {
     public override int[] damage { get; set; } = { 15, 15, 15, 25, 25};
 
-    public override int skillDistance { get; set; } = 3;
+    public override float skillDistance { get; set; } = 3f;
     
     /// <summary>
     /// 특정 지점으로 점프합니다.

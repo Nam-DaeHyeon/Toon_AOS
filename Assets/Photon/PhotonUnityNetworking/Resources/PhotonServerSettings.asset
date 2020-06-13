@@ -74,6 +74,12 @@ MonoBehaviour:
   - CallbackRPC_ForceSyncPosition
   - CallbackRPC_Skill_PushTargetCoroutine
   - CallbackRPC_SyncSP
+  - CallbackRPC_SyncHPIgnoreDefence
+  - CallbackRPC_CreateDecoy
+  - CallbackRPC_DeleteDecoy
+  - CallbackRPC_DeleteTrap
+  - CallbackRPC_DestroyObject
+  - CallbackRPC_ParentWorldCanvas
   DisableAutoOpenWizard: 1
   ShowSettings: 0
   DevRegionSetOnce: 1

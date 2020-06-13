@@ -124,6 +124,8 @@ public class PlayerProjectile : MonoBehaviourPun, IPunObservable
         photonView.RPC("CallbackRPC_MissileProecess", RpcTarget.All, dir, _setSkill.skillMissileExistTime, _setSkill.skillMissileSpeed);
     }
 
+
+
     [PunRPC]
     private void CallbackRPC_MissileProecess(Vector3 dir, float intime, float speed)
     {

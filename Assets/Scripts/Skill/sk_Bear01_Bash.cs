@@ -7,7 +7,7 @@ public class sk_Bear01_Bash : Skill
     public override int[] damage { get; set; } = { 15, 22, 29, 36, 45 };
     public override bool directPop { get; set; } = false;
 
-    public override int skillDistance { get; set; } = 3;
+    public override float skillDistance { get; set; } = 3f;
 
     public override IEnumerator IE_SkillProcess()
     {

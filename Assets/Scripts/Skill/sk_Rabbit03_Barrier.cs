@@ -8,7 +8,7 @@ public class sk_Rabbit03_Barrier : Skill
     public override int[] mdamage { get; set; } = { 7, 11, 16, 20, 25 };
 
     public override int skillAngle { get; set; } = 360;
-    public override int skillDistance { get; set; } = 6;
+    public override float skillDistance { get; set; } = 6f;
 
     public override float duration { get; set; } = 2f;
 

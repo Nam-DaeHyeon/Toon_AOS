@@ -75,6 +75,9 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
 
         //자신의 캐릭터 이펙트 풀링
         Add_EffectResource(GameManager.USER_CHARACTER);
+
+        //공용 이펙트 풀링
+        Add_SharedEffectResources();
     }
 
     /// <summary>
@@ -131,6 +134,11 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
         parentPlayerObj.GetComponent<Player>().SetAnimatorComponent(childAnim);
     }
     
+    /// <summary>
+    /// 프로젝타일을 활성화/비활성화시킵니다.
+    /// </summary>
+    /// <param name="target">프로젝타일 게임오브젝트</param>
+    /// <param name="value">활성화/비활성화</param>
     public void Set_ActiveProjectile(GameObject target, bool value)
     {
         if(value)
@@ -152,6 +160,68 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
         if (tempView == null) return;
         GameObject tempObj = tempView.gameObject;
         tempObj.SetActive(value);
+    }
+
+    /// <summary>
+    /// 포톤뷰 오브젝트를 삭제합니다.
+    /// </summary>
+    /// <param name="viewId">삭제하고자 하는 포톤뷰 아이디</param>
+    public void Destroy_PhotonViewObject(int viewId)
+    {
+        photonView.RPC("CallbackRPC_DestroyObject", RpcTarget.AllBuffered, viewId);
+    }
+
+    [PunRPC]
+    private void CallbackRPC_DestroyObject(int viewId)
+    {
+        var tempView = PhotonView.Find(viewId);
+        if (tempView == null) return;
+        Destroy(tempView.gameObject);
+    }
+
+    /// <summary>
+    /// 환상 오브젝트의 애니메이터 트리거를 전달합니다.
+    /// </summary>
+    /// <param name="viewId">환상 오브젝트의 포톤뷰 아이디</param>
+    /// <param name="triggerName">동작시킬 트리거 이름</param>
+    public void SetAnimatorTrigger_Decoy(int viewId, string triggerName)
+    {
+        photonView.RPC("CallbackRPC_AnimatorTrigger", RpcTarget.All, viewId, triggerName);
+    }
+
+    [PunRPC]
+    private void CallbackRPC_AnimatorTrigger(int viewId, string triggerName)
+    {
+        var tempView = PhotonView.Find(viewId);
+        if (tempView == null) return;
+        tempView.GetComponent<Animator>().SetTrigger(triggerName);
+    }
+
+    /// <summary>
+    /// 다른 클라이언트 상에서 자신의 HUD를 특정 오브젝트에 부모종속시킵니다. 
+    /// </summary>
+    /// <param name="viewId">특정 오브젝트 포톤뷰 아이디</param>
+    /// <param name="PlayerViewId">자신의 플레이어 포톤뷰 아이디</param>
+    public void SetParent_WorldCanvas(int viewId, int PlayerViewId)
+    {
+        photonView.RPC("CallbackRPC_ParentWorldCanvas", RpcTarget.All, viewId, PlayerViewId);
+    }
+
+    [PunRPC]
+    private void CallbackRPC_ParentWorldCanvas(int viewId, int PlayerViewId)
+    {
+        var targetView = PhotonView.Find(viewId);
+        var playerView = PhotonView.Find(PlayerViewId);
+
+        if (!photonView.IsMine)
+        {
+            Transform hudTr = playerView.GetComponent<Player>().UI_WorldCvs.transform;
+            Vector3 localPos = hudTr.localPosition;
+            hudTr.parent = targetView.transform;
+            hudTr.localPosition = localPos;
+
+            hudTr.gameObject.SetActive(true);
+        }
     }
 
     void IPunObservable.OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)

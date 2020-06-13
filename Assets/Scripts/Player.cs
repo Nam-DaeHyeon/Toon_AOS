@@ -56,6 +56,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
 
     #region 플레이어 행동 트리거 및 변수
     bool isMove = false;    //움직이고 있는 상태
+    public bool isMeleeAttack { get; set; } //기본 공격을 하고 있는 상태
     float distance = 0f;
     Vector3 dir;
 
@@ -198,6 +199,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     public void Set_StateMachine(PLAYER_STATE nextState)
     {
         _myState = nextState;
+        if (_currHP <= 0) _myState = PLAYER_STATE.DEAD;
+
         switch(nextState)
         {
             default:
@@ -210,7 +213,9 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
                 //StartCoroutine(IE_CastController());
                 break;
             case PLAYER_STATE.DEAD:
-                
+                _mainCamera.GetComponent<CameraFilter>().setGray = true;
+                _animator.gameObject.SetActive(false);
+                if(photonView.IsMine) PhotonNetwork.Instantiate("Grave", transform.position, _animator.transform.rotation);
                 break;
         }
     }
@@ -548,8 +553,10 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     /// <returns></returns>
     private IEnumerator IE_AnimEvent_Attack()
     {
+        isMeleeAttack = true;
         yield return new WaitForSeconds(atkAnimTime * 0.5f);
         AnimEvent_Attack();
+        isMeleeAttack = false;
     }
 
     /// <summary>
@@ -636,6 +643,13 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         photonView.RPC("CallbackRPC_SyncHP", RpcTarget.All, endAmount, true);
     }
 
+    public void TakeDamage_IgnoreDefence(float damage)
+    {
+        if (_currHP < 0) return;
+
+        photonView.RPC("CallbackRPC_SyncHPIgnoreDefence", RpcTarget.All, photonView.ViewID, damage);
+    }
+
     /// <summary>
     /// [RPC] 플레이어 체력 동기화
     /// </summary>
@@ -680,12 +694,18 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
 
         if(_currHP < 0)
         {
-            _mainCamera.GetComponent<CameraFilter>().setGray = true;
             Set_StateMachine(PLAYER_STATE.DEAD);
-            _animator.gameObject.SetActive(false);
-            PhotonNetwork.Instantiate("Grave", transform.position, _animator.transform.rotation);
         }
         if (_currHP > _maxHP) _currHP = _maxHP;
+    }
+
+    [PunRPC]
+    private void CallbackRPC_SyncHPIgnoreDefence(int viewId, float damage)
+    {
+        Player target = PhotonView.Find(viewId).GetComponent<Player>();
+        target._currHP -= damage;
+        target._imgHPBar.fillAmount = _currHP / _maxHP;
+        if (target._currHP <= 0) target.Set_StateMachine(PLAYER_STATE.DEAD);
     }
 
     /// <summary>
@@ -734,6 +754,11 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         return _speed;
     }
 
+    public float Get_MaxHP()
+    {
+        return _maxHP;
+    }
+
     /// <summary>
     /// 쉴드를 제거합니다.
     /// </summary>
@@ -771,11 +796,39 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         StartCoroutine(IE_BuffTimer(paramName, value, isBuff, duration));
     }
 
+    /// <summary>
+    /// 다른 플레이어로 인해 도트 데미지 디버프를 받았습니다.
+    /// </summary>
+    /// <param name="paramName">POISON</param>
+    /// <param name="damage">도트당 데미지</param>
+    /// <param name="delay">데미지 선 딜레이 (초 단위)</param>
+    /// <param name="duration">지속시간</param>
+    public void GetDotDam_FromOthers(string paramName, int damage, float delay, float duration)
+    {
+        StartCoroutine(IE_DotDamTimer(paramName, damage, delay, duration));
+    }
+
     private IEnumerator IE_BuffTimer(string paramName, int value, bool isBuff, float duration)
     {
         photonView.RPC("CallbackRPC_SyncParam", RpcTarget.All, paramName, value, isBuff);
         yield return new WaitForSeconds(duration);
         photonView.RPC("CallbackRPC_SyncParam", RpcTarget.All, paramName, value, !isBuff);
+    }
+
+    private IEnumerator IE_DotDamTimer(string paramName, int damage, float delay, float duration)
+    {
+        float timer = duration;
+        while(timer >= 0)
+        {
+            if ((timer -= delay) < 0) break;
+            yield return new WaitForSeconds(delay);
+
+            TakeDamage_IgnoreDefence(damage);
+
+
+            //photonView.RPC("CallbackRPC_SyncHPIgnoreDefence", RpcTarget.All, photonView.ViewID, damage);
+        }
+
     }
 
     [PunRPC]
@@ -865,14 +918,10 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
                 //자신(this) & NULL 예외처리
                 //if (MainManager.instance.allPlayers[i].Equals(this)) continue;
                 if (allPlayers[i].Equals(this)) continue;
-                if (_currBush == null) continue;
-
-                if (_currBush.Equals(allPlayers[i]._currBush))
+                if (_currBush == null || !_currBush.Equals(allPlayers[i]._currBush))
                 {
                     //안에 있는 플레이어끼리 불투명하게 처리하는 것은 BushGrass.cs 에서 처리
-                }
-                else
-                {
+                
                     //부쉬 밖에 있는 Other's Camera : 자신의 캐릭터 비활성화 
                     _skinRender.material.SetColor("_Color", new Color(1, 1, 1, 0));
                     _weaponRender.material.SetColor("_Color", new Color(1, 1, 1, 0));

@@ -7,7 +7,7 @@ using Photon.Pun;
 public class sk_Rabbit01_IceArrow : Skill
 {
     public override bool directPop { get; set; } = false;
-    public override int skillDistance { get; set; } = 1;
+    public override float skillDistance { get; set; } = 1f;
     public override int skillAngle { get; set; } = 0;
 
     public override int[] mdamage { get; set; } = { 25, 25, 30, 30, 35 };
