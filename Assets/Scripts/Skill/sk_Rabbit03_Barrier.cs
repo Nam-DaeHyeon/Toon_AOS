@@ -86,4 +86,11 @@ public class sk_Rabbit03_Barrier : Skill
             projectile.gameObject.SetActive(false);
         }
     }
+
+    public override string Get_FullDescription()
+    {
+        //return base.Get_FullDescription();
+        return "자신의 주변에 최대 " + duration + "초 동안 유지되는 보호 구역을 생성합니다. " +
+                "시전 시간동안 사용자는 무적이 되며, 주기적으로 구역 내 대상에게 " + GetDesc_Damage() + "의 " + GetDesc_DamageType() + "를 입힙니다.";
+    }
 }

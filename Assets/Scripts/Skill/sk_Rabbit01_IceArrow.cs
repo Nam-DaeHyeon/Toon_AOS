@@ -91,4 +91,9 @@ public class sk_Rabbit01_IceArrow : Skill
             }
         }
     }
+
+    public override string Get_FullDescription()
+    {
+        return base.Get_FullDescription() + " 투사체에 맞은 대상은 이동속도가 " + duration + "초 동안 절반이 됩니다.";
+    }
 }

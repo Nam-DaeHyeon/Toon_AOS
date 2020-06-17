@@ -74,7 +74,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         _skillDesc.tmpName.text = name;
         _skillDesc.tmpDesc.text = mainDesc;
         _skillDesc.tmpLevel.text = level.ToString();
-
+        
         _skillDesc.transform.position = pos;
         _skillDesc.gameObject.SetActive(true);
     }

@@ -90,4 +90,10 @@ public class sk_Cat04_GravityBoom : Skill
             yield return new WaitForSeconds(0.05f);
         }
     }
+
+    public override string Get_FullDescription()
+    {
+        //return base.Get_FullDescription();
+        return "특정 좌표에 주변 대상을 끌어당기는 폭탄을 던집니다. 해당 지역에 " + duration + "초 동안 주기적으로 " + GetDesc_Damage() + "의 " + GetDesc_DamageType() + "를 입히는 중력장을 생성합니다.";
+    }
 }

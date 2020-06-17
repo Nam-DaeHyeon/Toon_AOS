@@ -85,4 +85,10 @@ public class sk_Cat02_Hallucination : Skill
 
         DeleteDecoy(viewId);
     }
+
+    public override string Get_FullDescription()
+    {
+        //return base.Get_FullDescription();
+        return "특정 방향으로 분신을 만들어 달려가도록 합니다. 분신은 " + duration + "초 동안 지속되며, 자신은 투명상태가 됩니다. 투명상태는 공격을 하거나 스킬을 사용하면 해제됩니다.";
+    }
 }

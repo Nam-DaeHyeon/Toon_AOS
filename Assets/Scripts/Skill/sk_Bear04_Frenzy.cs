@@ -54,4 +54,14 @@ public class sk_Bear04_Frenzy : Skill
 
         //콜라이더 OFF
     }
+
+    public override string Get_FullDescription()
+    {
+        //return base.Get_FullDescription();
+
+        string atk = (int)(damage[0] * 0.5f) + "/" + (int)(damage[1] * 0.5f) + "/" + (int)(damage[2] * 0.5f);
+        string dfc = damage[0] + "/" + damage[1] + "/" + damage[2];
+        string spd = ((int)(player.Get_Speed() * 0.75f)).ToString();
+        return "분노 상태에 돌입합니다. " + duration + "초 동안 공격력 " + atk + ", 방어력 " + dfc + ", 마법방어력 " + dfc + ", 이동속도 " + spd + "만큼 증가합니다.";
+    }
 }

@@ -75,4 +75,9 @@ public class sk_Cat01_PoisonArrow : Skill
             }
         }
     }
+
+    public override string Get_FullDescription()
+    {
+        return base.Get_FullDescription() + " 투사체는 중독 상태를 발생시키며, 중독된 대상은 " + duration + "초마다 최대 체력의 10% + 0/1/2의 피해를 받습니다.";
+    }
 }

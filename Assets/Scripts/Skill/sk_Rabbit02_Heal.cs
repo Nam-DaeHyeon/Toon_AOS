@@ -38,4 +38,10 @@ public class sk_Rabbit02_Heal : Skill
         //후 이펙트
         //MainManager.instance.SetUnActive_SkillEffect("Heal");
     }
+
+    public override string Get_FullDescription()
+    {
+        //return base.Get_FullDescription();
+        return "자신의 체력을 " + GetDesc_Damage() + "만큼 회복합니다.";
+    }
 }

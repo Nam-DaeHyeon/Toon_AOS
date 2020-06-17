@@ -192,6 +192,7 @@ public class PlayerProjectile : MonoBehaviourPun, IPunObservable
     private void OnTriggerEnter(Collider other)
     {
         Debug.Log(other.name + " (" + LayerMask.LayerToName(other.gameObject.layer) + ")");
+        
         switch(myOption)
         {
             default:

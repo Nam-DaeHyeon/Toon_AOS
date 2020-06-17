@@ -60,9 +60,10 @@ public class Skill : MonoBehaviourPun
         return temp[2];
     }
 
-    public virtual string Get_SkillDesc()
+    public string Get_SkillDesc()
     {
-        return "이것은 스킬입니다.";
+        //return "이것은 스킬입니다.";
+        return Get_FullDescription();
     }
 
     public virtual int Get_MaxLevel()
@@ -110,4 +111,52 @@ public class Skill : MonoBehaviourPun
         return mdamage[skillLevel - 1];
     }
 
+    /// <summary>
+    /// 레벨별 데미지를 반환합니다.
+    /// </summary>
+    /// <returns></returns>
+    internal string GetDesc_Damage()
+    {
+        string temp = "";
+
+        int[] param = (damage != null) ? damage : mdamage;
+        for(int i = 0; i < param.Length; i++)
+        {
+            temp += param[i] + "/";
+        }
+        temp = temp.Substring(0, temp.Length - 1);
+        if (temp == null) temp = "";
+
+        return temp;
+    }
+
+    /// <summary>
+    /// 피해 타입을 반환합니다.
+    /// </summary>
+    /// <returns></returns>
+    internal string GetDesc_DamageType()
+    {
+        if (damage != null) return "물리 피해";
+        return "마법 피해";
+    }
+
+    /// <summary>
+    /// 스킬에 대한 설명을 반환합니다.
+    /// [일반적인 경우] 전방의/주변의 대상에게 (0/1/2/3/4)의 물리/마법 피해를 입힙니다.
+    /// [투사체의 경우] 특정 방향으로 (0/1/2/3/4)의 물리/마법 피해를 입히는 투사체를 발사합니다.
+    /// </summary>
+    /// <returns></returns>
+    public virtual string Get_FullDescription()
+    {
+        string desc = "";
+        if (skillMissileSpeed == 0)
+        {
+            string area = (skillAngle % 360 != 0)? "전방의 " : "주변의 ";
+            desc = area + "대상에게 " + GetDesc_Damage() + "의 " + GetDesc_DamageType() + "를 입힙니다.";
+
+        }
+        else desc = "특정 방향으로 " + GetDesc_Damage() + "의 " + GetDesc_DamageType() + "를 입히는 투사체를 발사합니다.";
+
+        return desc;
+    }
 }

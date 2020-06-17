@@ -48,6 +48,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     int _mdefence = 0;  //마법방어력
 
     float _speed = 5f;  //이동속도
+    float _meleeMissileSpd = 45f;   //원거리 평타 프로젝타일 속도
 
     public bool isInvincible { get; set; } = false; //무적 상태
 
@@ -67,7 +68,10 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     Shader baseShader;
     Shader alphaShader;
 
-    [SerializeField] PlayerProjectile[] _projectiles;
+    [SerializeField] Transform[] _meleeProjectile;  //평타 프로젝타일
+    Coroutine[] meleeCoroutine = new Coroutine[3];
+    int meleeIndex = 0;
+    [SerializeField] PlayerProjectile[] _projectiles;   //스킬 프로젝타일
     public Coroutine runningSkillRoutine { get; set; }
     #endregion
 
@@ -116,7 +120,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
             //photonView.RPC("CallbackRPC_SetInitParameter", RpcTarget.All);
             _mainCamera.GetComponent<CameraFilter>().setGray = false;
 
-            photonView.RPC("CallbackRPC_InitParameter", RpcTarget.AllBuffered, photonView.ViewID);
+            photonView.RPC("CallbackRPC_InitParameter", RpcTarget.AllBuffered, photonView.ViewID, GameManager.USER_CHARACTER);
 
             StartCoroutine(IE_BaseController());
             StartCoroutine(IE_PlayerInputKeyManager());
@@ -137,12 +141,29 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     /// </summary>
     //private void Set_InitParameter()
     [PunRPC]
-    private void CallbackRPC_InitParameter(int viewId)
+    private void CallbackRPC_InitParameter(int viewId, string characterName)
     {
         var player = PhotonView.Find(viewId).GetComponent<Player>();
-        
-        //캐릭터에 따른 능력치 설정
 
+        //캐릭터에 따른 능력치 설정
+        switch(characterName)
+        {
+            default:
+                player.atkAnimTime = 1.042f;    //공격 애니메이션 재생 시간
+                player._attackDamage = 10;
+                player._defence = 2;
+                break;
+            case "RABBIT":
+                player.atkAnimTime = 1.7f;
+                player._attackDamage = 5;
+                player._attackDistance = 8f;
+                break;
+            case "CAT":
+                player.atkAnimTime = 0.76f;
+                player._attackDamage = 6;
+                player._attackDistance = 6f;
+                break;
+        }
         //캐릭터별 스킬 설정
         player.SetInit_MySkillSet(viewId);
         player.Hide_SkillDesc();
@@ -512,6 +533,16 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         _skinRender = _animator.GetComponent<PlayerMeshRenderLinker>().skinRender;
         _weaponRender = _animator.GetComponent<PlayerMeshRenderLinker>().weaponRender;
 
+        _meleeProjectile = new Transform[3];
+        for (int i = 0; i < 3; i++)
+        {
+            _meleeProjectile[i] = _animator.transform.Find("MeleeProjectile " + i);
+            if (_meleeProjectile[i] == null) break;
+            _meleeProjectile[i].parent = null;
+            MainManager.instance.Set_ActiveProjectile(_meleeProjectile[i].gameObject, false);
+            //_meleeProjectile[i].gameObject.SetActive(false);
+        }
+
         //애니메이션 동기화를 위해 옵저버 등록
         if (!photonView.ObservedComponents.Contains(animator.GetComponent<PhotonAnimatorView>()))
             photonView.ObservedComponents.Add(animator.GetComponent<PhotonAnimatorView>());
@@ -569,7 +600,56 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         //중간에 대상 플레이어가 이탈한 경우 리턴
         if (atkTargetPlayer == null) return;
 
-        atkTargetPlayer.TakeDamage(_attackDamage);
+        if (_meleeProjectile == null) atkTargetPlayer.TakeDamage(_attackDamage);
+        else
+        {
+            if (_meleeProjectile[meleeIndex].gameObject.activeInHierarchy)
+            {
+                StopCoroutine(meleeCoroutine[meleeIndex]);
+                //StopCoroutine(IE_MissileAttack(45f, meleeIndex));
+                MainManager.instance.Set_ActiveProjectile(_meleeProjectile[meleeIndex].gameObject, false);
+                //_meleeProjectile[meleeIndex].gameObject.SetActive(false);
+            }
+
+            meleeCoroutine[meleeIndex] = StartCoroutine(IE_MissileAttack(45f, meleeIndex));
+            meleeIndex++;
+            if (meleeIndex == 3) meleeIndex = 0;
+        }
+    }
+
+    /// <summary>
+    /// 평타 프로젝타일 프로세스
+    /// </summary>
+    /// <param name="spd"></param>
+    /// <param name="index"></param>
+    /// <returns></returns>
+    private IEnumerator IE_MissileAttack(float spd, int index)
+    {
+        float subDistance;
+        Vector3 dir;
+
+        yield return new WaitForEndOfFrame();
+        _meleeProjectile[index].transform.position = transform.position + Vector3.up;
+        MainManager.instance.Set_ActiveProjectile(_meleeProjectile[index].gameObject, true);
+        //_meleeProjectile[index].gameObject.SetActive(true);
+
+        Player target = atkTargetPlayer;
+        do
+        {
+            if (target == null) break;
+            subDistance = Vector3.Distance(target.transform.position, new Vector3(_meleeProjectile[index].transform.position.x, target.transform.position.y, _meleeProjectile[index].transform.position.z));
+
+            dir = target.transform.position - new Vector3(_meleeProjectile[index].transform.position.x, target.transform.position.y, _meleeProjectile[index].transform.position.z);
+            dir.Normalize();
+            _meleeProjectile[index].Translate(dir * _speed * Time.deltaTime, Space.World);
+
+            yield return null;
+        } while (subDistance >= 0.1f);
+
+        if (target != null) target.TakeDamage(_attackDamage);
+        MainManager.instance.Set_ActiveProjectile(_meleeProjectile[index].gameObject, false);
+        // _meleeProjectile[index].gameObject.SetActive(false);
+        //_meleeProjectile.parent = _animator.transform;
     }
     #endregion
 

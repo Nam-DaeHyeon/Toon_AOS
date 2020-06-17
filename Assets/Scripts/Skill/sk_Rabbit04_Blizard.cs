@@ -61,6 +61,14 @@ public class sk_Rabbit04_Blizard : Skill
             MainManager.instance.SkillFunc_PushTarget(player.transform.position, targetPlayer.transform, skillDistance, 1, duration);
         }
     }
-    
-    
+
+    public override string Get_FullDescription()
+    {
+        //return base.Get_FullDescription();
+        string temp = base.Get_FullDescription();
+        temp.Replace("입힙니다.", "입히고,");
+
+        temp += "대상에게 " + duration + "초 동안 이동속도를 절반으로 만들고 밀쳐냅니다.";
+        return temp;
+    }
 }

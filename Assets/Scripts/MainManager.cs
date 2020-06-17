@@ -143,6 +143,12 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
     {
         if(value)
         {
+            if(target.GetComponent<PlayerProjectile>() == null)
+            {
+                photonView.RPC("CallbackRPC_ActiveObject", RpcTarget.All, target.GetComponent<PhotonView>().ViewID, value);
+                return;
+            }
+
             Vector3 skillPos = target.GetComponent<PlayerProjectile>().Get_PlayerTr().position;
             target.transform.position = new Vector3(skillPos.x, target.transform.position.y, skillPos.z) + Vector3.up;
             photonView.RPC("CallbackRPC_ActiveObject", RpcTarget.All, target.GetComponent<PhotonView>().ViewID, value);

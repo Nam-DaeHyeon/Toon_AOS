@@ -45,4 +45,10 @@ public class sk_Bear03_Guard : Skill
         //후 이펙트
         MainManager.instance.SetUnActive_SkillEffect("Guard");
     }
+
+    public override string Get_FullDescription()
+    {
+        //return base.Get_FullDescription();
+        return "자신에게 " + GetDesc_Damage() + "의 피해를 받는 보호막을 시전합니다. 보호막은 " + duration + "초 동안 유지됩니다.";
+    }
 }

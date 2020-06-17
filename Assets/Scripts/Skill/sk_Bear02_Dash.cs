@@ -76,4 +76,10 @@ public class sk_Bear02_Dash : Skill
         var omt = 1f - tt;
         return a * omt * omt + 2f * b * omt * tt + c * tt * tt;
     }
+
+    public override string Get_FullDescription()
+    {
+        //return base.Get_FullDescription();
+        return "특정 방향으로 크게 점프합니다. 착지하는 순간 주변의 대상에게 " + GetDesc_Damage() + "의 " + GetDesc_DamageType() + "을 입힙니다.";
+    }
 }

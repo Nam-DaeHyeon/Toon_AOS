@@ -23,4 +23,10 @@ public class sk_Cat03_Trap : Skill
 
         trap.GetComponent<FireTrap>().Set_ReadyMode();
     }
+
+    public override string Get_FullDescription()
+    {
+        //return base.Get_FullDescription() + " ;
+        return "트랩을 설치합니다. 트랩을 밟은 대상은 " + GetDesc_Damage() + "의 " + GetDesc_DamageType() + "를 입으며, " + duration + "초 동안 이동속도가 0이 됩니다.";
+    }
 }
