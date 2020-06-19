@@ -219,7 +219,7 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
         var targetView = PhotonView.Find(viewId);
         var playerView = PhotonView.Find(PlayerViewId);
 
-        if (!photonView.IsMine)
+        if (!playerView.IsMine)
         {
             Transform hudTr = playerView.GetComponent<Player>().UI_WorldCvs.transform;
             Vector3 localPos = hudTr.localPosition;

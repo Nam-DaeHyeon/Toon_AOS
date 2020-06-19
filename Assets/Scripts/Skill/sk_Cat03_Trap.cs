@@ -14,8 +14,6 @@ public class sk_Cat03_Trap : Skill
     {
         //return base.IE_SkillProcess();
 
-        player.SetAnimTrigger("IDLE");
-
         GameObject trap = PhotonNetwork.Instantiate("Trap", player.transform.position, player._animator.transform.rotation);
         trap.GetComponent<FireTrap>().Set_InitParameter(player, damage[skillLevel - 1], duration);
 

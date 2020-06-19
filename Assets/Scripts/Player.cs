@@ -533,14 +533,17 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         _skinRender = _animator.GetComponent<PlayerMeshRenderLinker>().skinRender;
         _weaponRender = _animator.GetComponent<PlayerMeshRenderLinker>().weaponRender;
 
-        _meleeProjectile = new Transform[3];
-        for (int i = 0; i < 3; i++)
+        if (_animator.transform.Find("MeleeProjectile 0") != null)
         {
-            _meleeProjectile[i] = _animator.transform.Find("MeleeProjectile " + i);
-            if (_meleeProjectile[i] == null) break;
-            _meleeProjectile[i].parent = null;
-            MainManager.instance.Set_ActiveProjectile(_meleeProjectile[i].gameObject, false);
-            //_meleeProjectile[i].gameObject.SetActive(false);
+            _meleeProjectile = new Transform[3];
+            for (int i = 0; i < 3; i++)
+            {
+                _meleeProjectile[i] = _animator.transform.Find("MeleeProjectile " + i);
+                if (_meleeProjectile[i] == null) break;
+                _meleeProjectile[i].parent = null;
+                MainManager.instance.Set_ActiveProjectile(_meleeProjectile[i].gameObject, false);
+                //_meleeProjectile[i].gameObject.SetActive(false);
+            }
         }
 
         //애니메이션 동기화를 위해 옵저버 등록
@@ -600,7 +603,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         //중간에 대상 플레이어가 이탈한 경우 리턴
         if (atkTargetPlayer == null) return;
 
-        if (_meleeProjectile == null) atkTargetPlayer.TakeDamage(_attackDamage);
+        if (_meleeProjectile.Length == 0) atkTargetPlayer.TakeDamage(_attackDamage);
         else
         {
             if (_meleeProjectile[meleeIndex].gameObject.activeInHierarchy)
@@ -939,8 +942,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     /// </summary>
     public void GetIn_Bush(BushGrass bush)
     {
-        _currBush = bush;
-        Set_HidingState();
+        //_currBush = bush;
+        Set_HidingState(photonView.ViewID, bush.photonView.ViewID);
     }
 
     /// <summary>
@@ -948,28 +951,30 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     /// </summary>
     public void GetOut_Bush(BushGrass bush)
     {
-        Set_UnHidingState();
-        bush = null;
+        Set_UnHidingState(photonView.ViewID, bush.photonView.ViewID);
+        //bush = null;
     }
 
     /// <summary>
     /// 투명 상태로 돌입합니다.
+    /// 부쉬에 들어가는 것이 아니라면 두번째 파라미터 입력을 생략합니다.
     /// </summary>
-    public void Set_HidingState()
+    public void Set_HidingState(int playerId, int bushId = -1)
     {
-        photonView.RPC("CallbackRPC_Hide", RpcTarget.All);
+        photonView.RPC("CallbackRPC_Hide", RpcTarget.All, playerId, bushId);
     }
     
     /// <summary>
     /// 투명 상태를 해제합니다.
+    /// 부쉬에 나오는 것이 아니라면 두번째 파라미터 입력을 생략합니다.
     /// </summary>
-    public void Set_UnHidingState()
+    public void Set_UnHidingState(int playerId, int bushId = -1)
     {
-        photonView.RPC("CallbackRPC_UnHide", RpcTarget.All);
+        photonView.RPC("CallbackRPC_UnHide", RpcTarget.All, playerId, bushId);
     }
 
     [PunRPC]
-    private void CallbackRPC_Hide()
+    private void CallbackRPC_Hide(int playerId, int bushId)
     {
         //gameObject.layer = LayerMask.NameToLayer("HidePlayer");
         _skinRender.material.shader = alphaShader;
@@ -977,6 +982,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         //_weaponRender.material.SetColor("_Color", new Color(1, 1, 1, 0));
         //_skinRender.sharedMaterial.SetColor("_Color", new Color32(255, 255, 255, 110));
 
+        Player hidePlayer = PhotonView.Find(playerId).GetComponent<Player>();
+        if(bushId != -1) hidePlayer._currBush = PhotonView.Find(bushId).GetComponent<BushGrass>();
         
         //본인은 불투명하게 표현
         if (photonView.IsMine)
@@ -1012,12 +1019,15 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     }
 
     [PunRPC]
-    private void CallbackRPC_UnHide()
+    private void CallbackRPC_UnHide(int playerId, int bushId)
     {
         //gameObject.layer = LayerMask.NameToLayer("Player");
         _skinRender.material.shader = baseShader;
         _weaponRender.material.shader = baseShader;
         UI_WorldCvs.gameObject.SetActive(true);
+
+        Player unPlayer = PhotonView.Find(playerId).GetComponent<Player>();
+        if (bushId != -1) unPlayer._currBush = null;
     }
     #endregion
 

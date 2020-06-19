@@ -18,10 +18,10 @@ public class sk_Cat02_Hallucination : Skill
         targetPos = player.GetHitPoint();
         player._animator.transform.LookAt(targetPos);
 
-        player.SetAnimTrigger("IDLE");
+        //player.SetAnimTrigger("IDLE");
 
         Vector3 originWCvsLocalPos = player.UI_WorldCvs.transform.localPosition;
-        player.Set_HidingState();
+        player.Set_HidingState(player.photonView.ViewID);
         CreateDecoy();
 
         //디코이 캔슬 체크
@@ -39,7 +39,7 @@ public class sk_Cat02_Hallucination : Skill
             yield return null;
         }
         
-        player.Set_UnHidingState();
+        player.Set_UnHidingState(player.photonView.ViewID);
     }
     
     private bool Check_CastingSkill(Skill skill, KeyCode keyCode)
