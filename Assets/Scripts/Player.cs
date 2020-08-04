@@ -976,7 +976,6 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     [PunRPC]
     private void CallbackRPC_Hide(int playerId, int bushId)
     {
-        //gameObject.layer = LayerMask.NameToLayer("HidePlayer");
         _skinRender.material.shader = alphaShader;
         _weaponRender.material.shader = alphaShader;
         //_weaponRender.material.SetColor("_Color", new Color(1, 1, 1, 0));
