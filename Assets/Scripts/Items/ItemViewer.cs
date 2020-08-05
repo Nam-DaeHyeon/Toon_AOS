@@ -20,6 +20,8 @@ public class ItemViewer : MonoBehaviour
     //세부 아이템 뷰어
     [SerializeField] GameObject _detailSlotRoot;
 
+    [SerializeField] TMP_Text _clickedItemSpec;
+
     //부모 노드 아이템 슬롯 버튼 집합 (해당 아이템을 하위 재료로 두는 아이템들의 집합)
     [SerializeField] Button[] _parentSlots;
     //자식 노드 아이템 슬롯 버튼 집합 트리 (해당 아이템을 포함한 하위 재료 아이템들의 집합 트리)
@@ -86,6 +88,14 @@ public class ItemViewer : MonoBehaviour
     //특정 아이템의 자식 트리 및 부모 목록을 확인할 수 있는 창을 엽니다.
     private void Set_DetailViewer(string itemName)
     {
+        //선택한 아이템 스펙 정보 표시
+        _clickedItemSpec.text = itemName + "\n";
+        ItemBase item = ItemManager.ItemDB[itemName];
+        for(int i = 0; i < item.specs.Count; i++)
+        {
+            _clickedItemSpec.text += item.specs[i].category + " + " + item.specs[i].value + "\n";
+        }
+
         //자식 & 부모 아이템 탐색 
         //탐색한 아이템 목록들을 뷰어에 시각적으로 표현
         Set_ChildTreeViewer(itemName);
