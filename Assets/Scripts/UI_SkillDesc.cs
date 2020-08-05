@@ -8,4 +8,5 @@ public class UI_SkillDesc : MonoBehaviour
     public Text tmpName;
     public Text tmpDesc;
     public Text tmpLevel;
+    
 }

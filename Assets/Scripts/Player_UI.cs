@@ -9,7 +9,6 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     [SerializeField] UI_SkillSlot[] _skillSlots;
     [SerializeField] UI_SkillDesc _skillDesc;
     public Canvas UI_WorldCvs;
-    public Canvas UI_OverlayCvs;
 
     /// <summary>
     /// 스킬 공격 시, 공격 범위를 가시화 해주기 위한 라인렌더러 오브젝트
@@ -18,14 +17,29 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     float radiovector = 5f;
     float radioangle = 45f;
 
+    private void SetInitAddr_SkillSlot()
+    {
+        SkillViewer viewer = FindObjectOfType<SkillViewer>();
+
+        _skillSlots = viewer.slots;
+        foreach (var slot in _skillSlots) slot.owner = this;
+
+        _skillDesc = viewer.desc;
+        
+        SetInit_MySkillSet(-1);
+        Hide_SkillDesc();
+
+        GetSkillPoint();
+    }
+
     #region 스킬 관련
     /// <summary>
     /// 캐릭터별 스킬을 등록합니다.
     /// </summary>
     private void SetInit_MySkillSet(int viewId)
     {
-        Player target = PhotonView.Find(viewId).GetComponent<Player>();
-
+        Player target = (viewId == -1)? this : PhotonView.Find(viewId).GetComponent<Player>();
+        
         switch (GameManager.USER_CHARACTER)
         {
             default: //BEAR
@@ -90,17 +104,15 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     /// <summary>
     /// 스킬포인트를 얻었습니다.
     /// </summary>
-    public void GetSkillPoint(int viewId)
+    public void GetSkillPoint()
     {
-        if (photonView.ViewID == viewId)
-        {
-            _skillPoint++;
+        _skillPoint++;
 
-            for (int i = 0; i < _skillSlots.Length; i++)
-            {
-                _skillSlots[i].Show_LevelUPButton();
-            }
+        for (int i = 0; i < _skillSlots.Length; i++)
+        {
+            _skillSlots[i].Show_LevelUPButton();
         }
+
     }
 
     /// <summary>

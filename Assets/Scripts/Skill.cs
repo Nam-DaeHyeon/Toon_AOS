@@ -50,8 +50,17 @@ public class Skill : MonoBehaviourPun
 
     private void Awake()
     {
-        player = GetComponentInParent<Player>();
+        //player = GetComponentInParent<Player>();  //씬에 분리했으니 추가적인 처리가 필요
+        
         skillImage = Resources.Load<Sprite>("Skill/" + Get_SkillName());
+    }
+
+    /// <summary>
+    /// 스킬 사용자 주소를 등록합니다.
+    /// </summary>
+    public void SetOwner(Player player)
+    {
+        this.player = player;
     }
 
     public string Get_SkillName()

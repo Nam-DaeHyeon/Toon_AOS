@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using Photon.Pun;
 
 public class UI_SkillSlot : MonoBehaviour
 {
-    [SerializeField] Player _player;
+    public Player owner { get; set; }
     Skill setSkill { set; get; }
 
     float _leftTime;
@@ -14,7 +15,7 @@ public class UI_SkillSlot : MonoBehaviour
     [SerializeField] Image _imgSkillIcon;
     [SerializeField] Image _imgLevelBar;
     [SerializeField] Button _btnLvUP;
-
+    
     /// <summary>
     /// 스킬을 등록합니다.
     /// </summary>
@@ -22,6 +23,9 @@ public class UI_SkillSlot : MonoBehaviour
     {
         //스킬값 저장
         setSkill = newSkill;
+
+        //스킬 소유자 등록
+        setSkill.SetOwner(owner);
 
         //스킬 아이콘 이미지 변경
         _imgSkillIcon.sprite = newSkill.skillImage;
@@ -64,7 +68,7 @@ public class UI_SkillSlot : MonoBehaviour
         //재사용 대기 시간 중이라면 리턴
         if (_leftTime > 0) return;
         //다른 스킬이 발동 중이라면 리턴
-        if (_player.Get_CurrentState().Equals(PLAYER_STATE.CAST)) return;
+        if (owner.Get_CurrentState().Equals(PLAYER_STATE.CAST)) return;
 
         //스킬이 즉시 시전되는지에 따라 스킬을 발동합니다.
         if (setSkill.directPop) Callback_UseSkill();
@@ -74,7 +78,7 @@ public class UI_SkillSlot : MonoBehaviour
     private void Callback_UseSkill()
     {
         //시선 재설정 및 행동 중지
-        _player.Callback_SetDir_OnKeyUp();
+        owner.Callback_SetDir_OnKeyUp();
 
         //쿨타임 초기화
         StartCoroutine(IE_SlotTimer());
@@ -85,15 +89,15 @@ public class UI_SkillSlot : MonoBehaviour
 
     private IEnumerator IE_Wait_KeyCodeUp(KeyCode inputCode)
     {
-        //_player.SetParam_LineRender(5, 90);
+        //owner.SetParam_LineRender(5, 90);
 
-        if(setSkill.skillAngle != 0) _player.SetParam_LineRender(setSkill.skillDistance, setSkill.skillAngle);
-        else _player.SetParam_LineRender((int)(setSkill.skillMissileSpeed * setSkill.skillMissileExistTime), setSkill.skillAngle);
-        _player.Draw_LineRender();
+        if(setSkill.skillAngle != 0) owner.SetParam_LineRender(setSkill.skillDistance, setSkill.skillAngle);
+        else owner.SetParam_LineRender((int)(setSkill.skillMissileSpeed * setSkill.skillMissileExistTime), setSkill.skillAngle);
+        owner.Draw_LineRender();
 
         yield return new WaitUntil(() => Input.GetKeyUp(inputCode));
 
-        _player.DrawOff_LineRender();
+        owner.DrawOff_LineRender();
         Callback_UseSkill();
     }
 
@@ -102,7 +106,7 @@ public class UI_SkillSlot : MonoBehaviour
     /// </summary>
     public void UI_PointerEnter_ShowSkillDesc()
     {
-        _player.ShowUp_SkillDesc(transform.position, setSkill.Get_SkillName(), setSkill.Get_SkillDesc(), setSkill.skillLevel);
+        owner.ShowUp_SkillDesc(transform.position, setSkill.Get_SkillName(), setSkill.Get_SkillDesc(), setSkill.skillLevel);
     }
 
     /// <summary>
@@ -110,7 +114,7 @@ public class UI_SkillSlot : MonoBehaviour
     /// </summary>
     public void UI_PointerExit_HideSkillDesc()
     {
-        _player.Hide_SkillDesc();
+        owner.Hide_SkillDesc();
     }
 
     /// <summary>
@@ -137,11 +141,11 @@ public class UI_SkillSlot : MonoBehaviour
     public void UI_Button_SkillLevelUP()
     {
         //스킬 포인트가 없을 경우 리턴
-        if (_player._skillPoint <= 0) return;
-        _player._skillPoint--;
+        if (owner._skillPoint <= 0) return;
+        owner._skillPoint--;
 
         //스킬 포인트가 없을 경우 모든 버튼 비활성화
-        if (_player._skillPoint <= 0) _player.Hide_SkillLvUPBtns();
+        if (owner._skillPoint <= 0) owner.Hide_SkillLvUPBtns();
 
         setSkill.skillLevel++;
         _imgLevelBar.fillAmount = (float)setSkill.skillLevel / (float)setSkill.Get_MaxLevel();

@@ -11,7 +11,7 @@ public enum PROJECTILE_OPTION
     투사체충돌없음,
 }
 
-public class PlayerProjectile : MonoBehaviourPun, IPunObservable
+public class PlayerProjectile : MonoBehaviourPun
 {
     [SerializeField] SphereCollider _myCollider;
     Transform _playerTr;
@@ -73,6 +73,8 @@ public class PlayerProjectile : MonoBehaviourPun, IPunObservable
     /// <returns></returns>
     private bool Check_InSkillArea(Vector3 targetPos)
     {
+        if (_setSkill == null) return false;
+
         Debug.Log(_setSkill.skillAngle);
         //일직선으로 날아가는 또는 플레이어 주변에서 원형으로 폭발하는 스킬은 각도 계산을 생략한다.
         if (_setSkill.skillAngle % 360 == 0) return true;
@@ -129,8 +131,12 @@ public class PlayerProjectile : MonoBehaviourPun, IPunObservable
     [PunRPC]
     private void CallbackRPC_MissileProecess(Vector3 dir, float intime, float speed)
     {
-        if(photonView.IsMine) StartCoroutine(IE_PlayMissile(dir, intime, speed));
-        else StartCoroutine(IE_PlayDummyMissile(dir, intime, speed));
+        if (photonView.IsMine) StartCoroutine(IE_PlayMissile(dir, intime, speed));
+        else
+        {
+            //다른 클라이언트에서 위치 보정
+            StartCoroutine(IE_PlayDummyMissile(dir, intime, speed));
+        }
     }
 
     public void Add_RigidBody()
@@ -252,17 +258,6 @@ public class PlayerProjectile : MonoBehaviourPun, IPunObservable
 
     public Transform Get_PlayerTr() { return _playerTr; }
 
-    void IPunObservable.OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
-    {
-        if(stream.IsWriting)
-        {
-            stream.SendNext(_setSkill);
-        }
-        else
-        {
-            _setSkill = (Skill)stream.ReceiveNext();
-        }
-    }
     /*
     // Update is called once per frame
     void Update()

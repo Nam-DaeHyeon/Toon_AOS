@@ -5,10 +5,17 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Linq;
-using System.Reflection;
+using Photon.Pun;
 
 public class ItemViewer : MonoBehaviour
 {
+    Player _owner;
+
+    //플레이어 개인 능력치 및 인벤토리
+    [SerializeField] GameObject _playerSpecRoot;
+    TMP_Text[] _playerSpec;
+    TMP_Text[] _playerItems;
+
     //아이템 검색 창
     [SerializeField] TMP_InputField _searchField;
 
@@ -20,7 +27,14 @@ public class ItemViewer : MonoBehaviour
     //세부 아이템 뷰어
     [SerializeField] GameObject _detailSlotRoot;
 
-    [SerializeField] TMP_Text _clickedItemSpec;
+    //클릭한 아이템 정보 뷰어
+    [SerializeField] GameObject _clickedItemSpecRoot;
+    TMP_Text _clickedItemSpec;
+    TMP_Text _clickedItemButton;    //구매 및 판매 버튼
+
+    //상점 인벤토리
+    [SerializeField] GameObject _invenSlotStoreRoot;
+    TMP_Text[] _playerItemsInStore;
 
     //부모 노드 아이템 슬롯 버튼 집합 (해당 아이템을 하위 재료로 두는 아이템들의 집합)
     [SerializeField] Button[] _parentSlots;
@@ -33,23 +47,93 @@ public class ItemViewer : MonoBehaviour
 
     private void Awake()
     {
-        SetInit_TotalSlots();
+        StartCoroutine(IE_Awake());
     }
 
-    // Start is called before the first frame update
-    void Start()
+    IEnumerator IE_Awake()
     {
-        Set_TotalViewer();
+        if (!GetComponent<PhotonView>().IsMine) yield break;
+        yield return new WaitUntil(() => FindObjectOfType<Player>() != null);
+
+        _owner = MainManager.instance.owner;
+        //SetInit_OwnerPlayer();
+
+        SetInit_PlayerSpecNInventory();
+        SetInit_TotalSlots();
+        SetInit_ClickSpecs();
     }
-    
+
+    /// <summary>
+    /// [최우선 등록] 스크립트 종속 플레이어 등록
+    /// </summary>
+    private void SetInit_OwnerPlayer()
+    {
+        Player[] players = FindObjectsOfType<Player>();
+        for (int i = 0; i < players.Length; i++)
+        {
+            if (players[i].GetComponent<PhotonView>().IsMine)
+            {
+                _owner = players[i];
+
+                return;
+            }
+        }
+    }
+
+    /// <summary>
+    /// [초기 등록] 플레이어 능력치와 인벤토리 주소를 탐색/등록합니다.
+    /// </summary>
+    private void SetInit_PlayerSpecNInventory()
+    {
+        TMP_Text[] temp = _playerSpecRoot.GetComponentsInChildren<TMP_Text>();
+
+        _playerSpec = new TMP_Text[5];
+        _playerItems = new TMP_Text[temp.Length - 5];
+        for (int i = 0; i < temp.Length; i++)
+        {
+            //공격력 | 마법공격력 | 방어력 | 마법방어력 | 이동속도
+            if( i < 5)
+            {
+                _playerSpec[i] = temp[i];
+            }
+            else
+            {
+                _playerItems[i - 5] = temp[i];
+            }
+        }
+
+        Update_PlayerSpec();
+    }
+
+    /// <summary>
+    /// [초기 등록] 전체 아이템 항목 뷰어에 있는 아이템 버튼들의 주소를 탐색/등록합니다.
+    /// </summary>
     private void SetInit_TotalSlots()
     {
         _totalSlots = _totalSlotRoot.GetComponentsInChildren<Button>();
 
         var array = Get_AllItemTypes();
         Update_TotalSlot(array);
+
+        //플레이어 인벤토리(상점) UI 컴포넌트 등록
+        _playerItemsInStore = _invenSlotStoreRoot.GetComponentsInChildren<TMP_Text>();
+
+        Set_TotalViewer();
     }
 
+    /// <summary>
+    /// [초기 등록] 선택한 아이템을 표시하기 위한 설명란 컴포넌트와 구매 버튼 컴포넌트를 탐색/등록합니다.
+    /// </summary>
+    private void SetInit_ClickSpecs()
+    {
+        TMP_Text[] children = _clickedItemSpecRoot.transform.GetComponentsInChildren<TMP_Text>();
+        _clickedItemSpec = children[0];
+        _clickedItemButton = children[1];
+    }
+
+    /// <summary>
+    /// 해당 설정값으로 전체 아이템 항목을 정렬/갱신합니다.
+    /// </summary>
     private void Update_TotalSlot(ItemBase[] sortArray)
     {
         for (int i = 0; i < _totalSlots.Length; i++)
@@ -66,6 +150,19 @@ public class ItemViewer : MonoBehaviour
             string typeName = sortArray[i].GetType().ToString();
             _totalSlots[i].GetComponentInChildren<TMP_Text>().text = typeName.Substring(typeName.LastIndexOf('_') + 1);
         }
+    }
+
+    /// <summary>
+    /// 플레이어 능력치 정보를 갱신합니다.
+    /// </summary>
+    private void Update_PlayerSpec()
+    {
+        //공격력 | 마법공격력 | 방어력 | 마법방어력 | 이동속도
+        _playerSpec[0].text = "공격력 " + _owner.Get_Spec(ItemCategory.공격력).ToString();
+        _playerSpec[1].text = "마법공격력 " + _owner.Get_Spec(ItemCategory.마법공격력).ToString();
+        _playerSpec[2].text = "방어력 " + _owner.Get_Spec(ItemCategory.방어력).ToString();
+        _playerSpec[3].text = "마법방어력 " + _owner.Get_Spec(ItemCategory.마법방어력).ToString();
+        _playerSpec[4].text = "이동속도 " + _owner.Get_Spec(ItemCategory.이동속도).ToString();
     }
 
     //모든 아이템들의 목록을 확인할 수 있는 창을 엽니다. (+검색 기능)
@@ -91,7 +188,7 @@ public class ItemViewer : MonoBehaviour
         //선택한 아이템 스펙 정보 표시
         _clickedItemSpec.text = itemName + "\n";
         ItemBase item = ItemManager.ItemDB[itemName];
-        for(int i = 0; i < item.specs.Count; i++)
+        for (int i = 0; i < item.specs.Count; i++)
         {
             _clickedItemSpec.text += item.specs[i].category + " + " + item.specs[i].value + "\n";
         }
@@ -259,10 +356,18 @@ public class ItemViewer : MonoBehaviour
         Set_TotalViewer();
     }
 
+    //뷰어를 활성화합니다.
+    public void UI_ButtonClick_ViewerOpen()
+    {
+        transform.GetChild(1).gameObject.SetActive(true);
+    }
+
     //뷰어 창을 닫습니다.
     public void UI_ButtonClick_ViewerQuit()
     {
-        gameObject.SetActive(false);
+        //gameObject.SetActive(false);
+        //_totalSlotRoot.transform.parent.gameObject.SetActive(false);
+        transform.GetChild(1).gameObject.SetActive(false);
     }
     
     //전체 항목 뷰어에서 아이템을 클릭했습니다.
@@ -270,19 +375,50 @@ public class ItemViewer : MonoBehaviour
     {
         string itemName = _totalSlots[btnIdx].GetComponentInChildren<TMP_Text>().text;
 
+        Update_PurchaseButton(true);
         Set_DetailViewer(itemName);
     }
 
     //아이템 세부 뷰어에서 트리에 표기된 아이템을 클릭했습니다.
     public void UI_ButtonClick_ItemSlotInTree(TMP_Text btnAttr)
     {
+        if (btnAttr.text.Trim().Equals("") || btnAttr.text == null) return;
+        
+        Update_PurchaseButton(true);
         Set_DetailViewer(btnAttr.text);
     }
 
     //아이템 세부 뷰어에서 부모 배열에 표기된 아이템을 클릭했습니다.
     public void UI_ButtonClick_ItemSlotInParentArray(TMP_Text btnAttr)
     {
+        if (btnAttr.text.Trim().Equals("") || btnAttr.text == null) return;
+
+        Update_PurchaseButton(true);
         Set_DetailViewer(btnAttr.text);
+    }
+
+    //상점 UI에 있는 인벤토리의 아이템을 클릭했습니다.
+    public void UI_ButtonClick_ItemSlotInInventory(TMP_Text btnAttr)
+    {
+        if (btnAttr.text.Trim().Equals("") || btnAttr.text == null) return;
+
+        Update_PurchaseButton(false);
+        Set_DetailViewer(btnAttr.text);
+    }
+
+    private void Update_PurchaseButton(bool purchase)
+    {
+        //보유 아이템을 클릭했으니 판매 기능을 수행하도록한다.
+        _clickedItemButton.text = purchase ? "구매" : "판매";
+        int cost = 0;
+
+        //선택한 아이템의 보유 여부에 따라 구매 비용 측정
+        if (purchase)
+        {
+
+        }
+        _clickedItemButton.text += " " + cost;
+
     }
 
     //아이템을 검색합니다.
@@ -334,6 +470,53 @@ public class ItemViewer : MonoBehaviour
         }
 
         Update_TotalSlot(liqq.ToArray());
+    }
+
+    //선택한 아이템의 보유 여부에 따라 구매 / 판매를 합니다.
+    public void UI_ButtonClick_PurchaseItem()
+    {
+        //선택한 아이템 이름 호출
+        string itemName = _childSlots[0].GetComponentInChildren<TMP_Text>().text;
+
+        if (_clickedItemButton.text.Contains("구매"))
+        {
+            for(int i = 0; i< _owner.inventory.Length; i++)
+            {
+                //빈 슬롯에 아이템 추가
+                if(_owner.inventory[i] == "")
+                {
+                    //구매완료 : 슬롯에 추가
+                    //_owner.inventory[i] = itemName;   //플레이어 인벤토리 데이터
+                    _owner.AddItem_Inventory(i, itemName);   //플레이어 인벤토리 데이터
+                    _playerItems[i].text = _owner.inventory[i]; //상시 스펙 뷰어 인벤토리 UI
+                    _playerItemsInStore[i].text = _owner.inventory[i]; //상점 인벤토리 UI
+                    
+                    break;
+                }
+            }
+        }
+        else if (_clickedItemButton.text.Contains("판매"))
+        {
+            for (int i = 0; i < _owner.inventory.Length; i++)
+            {
+                //해당 슬롯 아이템 제거
+                if (_owner.inventory[i] == itemName)
+                {
+                    //판매완료 : 슬롯에서 제거
+                    //_owner.inventory[i] = "";   //플레이어 인벤토리 데이터
+                    _owner.RemoveItem_Inventory(i, itemName);   //플레이어 인벤토리 데이터
+                    _playerItems[i].text = _owner.inventory[i]; //상시 스펙 뷰어 인벤토리 UI
+                    _playerItemsInStore[i].text = _owner.inventory[i]; //상점 인벤토리 UI
+
+                    //버튼 속성 변환
+                    Update_PurchaseButton(true);
+
+                    break;
+                }
+            }
+        }
+
+        Update_PlayerSpec();
     }
 
     #endregion

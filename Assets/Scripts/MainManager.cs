@@ -7,6 +7,9 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
 {
     GameObject playerObj;
     GameObject childChar;
+
+    public Player owner;
+
     public static MainManager s_instance;
     public static MainManager instance
     {
@@ -65,8 +68,9 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
                                                          new Vector3(randX, 0, randZ),
                                                          Quaternion.Euler(0, 0, 0));
 
-        playerObj.GetComponent<Player>()._cursorObj = cursorObjSample;
-        playerObj.GetComponent<Player>().Set_InitLineRendererObj(lineObjSample);
+        owner = playerObj.GetComponent<Player>();
+        owner._cursorObj = cursorObjSample;
+        owner.Set_InitLineRendererObj(lineObjSample);
 
         SetCreate_Character(GameManager.USER_CHARACTER);
         //photonView.RPC("CallbackRPC_CreateCharacter", RpcTarget.AllBuffered, playerObj.GetComponent<PhotonView>().ViewID, GameManager.USER_CHARACTER);
@@ -141,9 +145,9 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
     /// <param name="value">활성화/비활성화</param>
     public void Set_ActiveProjectile(GameObject target, bool value)
     {
-        if(value)
+        if (value)
         {
-            if(target.GetComponent<PlayerProjectile>() == null)
+            if (target.GetComponent<PlayerProjectile>() == null)
             {
                 photonView.RPC("CallbackRPC_ActiveObject", RpcTarget.All, target.GetComponent<PhotonView>().ViewID, value);
                 return;
@@ -155,8 +159,9 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
             target.GetComponent<PlayerProjectile>().SetPlay_Missile();
         }
         else
+        {
             photonView.RPC("CallbackRPC_ActiveObject", RpcTarget.All, target.GetComponent<PhotonView>().ViewID, value);
-
+        }
     }
 
     [PunRPC]

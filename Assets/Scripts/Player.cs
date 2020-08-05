@@ -43,6 +43,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     float _currSP = 0F; //현재 쉴드량
     float _maxSP = 0F;  //최대 쉴드량
     float _attackDamage = 5f;       //공격력
+    float _mattackDamage = 0f;
     float _attackDistance = 2.5f;   //공격범위
     int _defence = 0;   //물리방어력
     int _mdefence = 0;  //마법방어력
@@ -53,6 +54,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     public bool isInvincible { get; set; } = false; //무적 상태
 
     public int _skillPoint { set; get; } = 0;
+
+    public string[] inventory = new string[6];
     #endregion
 
     #region 플레이어 행동 트리거 및 변수
@@ -120,6 +123,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
             //photonView.RPC("CallbackRPC_SetInitParameter", RpcTarget.All);
             _mainCamera.GetComponent<CameraFilter>().setGray = false;
 
+            SetInitAddr_SkillSlot();
             photonView.RPC("CallbackRPC_InitParameter", RpcTarget.AllBuffered, photonView.ViewID, GameManager.USER_CHARACTER);
 
             StartCoroutine(IE_BaseController());
@@ -164,13 +168,14 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
                 player._attackDistance = 6f;
                 break;
         }
+
         //캐릭터별 스킬 설정
-        player.SetInit_MySkillSet(viewId);
-        player.Hide_SkillDesc();
+        //player.SetInit_MySkillSet(viewId);
+        //player.Hide_SkillDesc();
 
         //능력치 초기화 및 시작 설정
         _currHP = _maxHP;
-        GetSkillPoint(viewId);
+        //GetSkillPoint(viewId);
         isInvincible = false;
 
         //컨트롤러 스테이트 초기화
@@ -197,7 +202,6 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         else
         {
             _mainCamera.gameObject.SetActive(false);
-            UI_OverlayCvs.gameObject.SetActive(false);
             if (_cursorObj != null) Destroy(_cursorObj.gameObject);
             if (_lineObj != null) Destroy(_lineObj.gameObject);
         }
@@ -1033,6 +1037,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     public void Set_PlayerLevelUp()
     {
         if (!photonView.IsMine) return;
+        GetSkillPoint();
         photonView.RPC("CallbackRPC_PlayerLevelUP", RpcTarget.All, photonView.ViewID);
     }
 
@@ -1045,7 +1050,6 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         Player target = PhotonView.Find(viewId).GetComponent<Player>();
         if (target._level >= 18) return;
         target._level++;
-        target.GetSkillPoint(viewId);
     }
 
     /// <summary>
@@ -1123,5 +1127,117 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         if (_animator == null) return;
 
         _animator.GetComponent<Outline>().enabled = false;
+    }
+
+    /// <summary>
+    /// 카테고리에 해당하는 현재 능력치 값을 반환합니다. 해당하는 값이 없을 경우 -1을 반환합니다.
+    /// </summary>
+    public float Get_Spec(ItemCategory category)
+    {
+        switch(category)
+        {
+            case ItemCategory.공격력:
+                return _attackDamage;
+            case ItemCategory.마법공격력:
+                return _mattackDamage;
+            case ItemCategory.방어력:
+                return _defence;
+            case ItemCategory.마법방어력:
+                return _mdefence;
+            case ItemCategory.이동속도:
+                return _speed;
+
+            case ItemCategory.체력:
+                return _maxHP;
+
+            default:
+                return -1;
+        }
+    }
+
+    /// <summary>
+    /// 인벤토리에 아이템을 추가합니다.
+    /// </summary>
+    /// <param name="idx">인벤토리 슬롯 인덱스</param>
+    /// <param name="itemName">추가할 아이템 이름</param>
+    public void AddItem_Inventory(int idx, string itemName)
+    {
+        ItemBase item = ItemManager.ItemDB[itemName];
+
+        inventory[idx] = itemName;
+
+        for(int i = 0; i < item.specs.Count; i++)
+        {
+            int tempValue = item.specs[i].value;
+            switch (item.specs[i].category)
+            {
+                case ItemCategory.공격력:
+                    _attackDamage += tempValue;
+                    break;
+                case ItemCategory.마법공격력:
+                    _mattackDamage += tempValue;
+                    break;
+                case ItemCategory.방어력:
+                    _defence += tempValue;
+                    break;
+                case ItemCategory.마법방어력:
+                    _mdefence += tempValue;
+                    break;
+                case ItemCategory.체력:
+                    _maxHP += tempValue;
+                    break;
+                case ItemCategory.이동속도:
+                    _speed += tempValue;
+                    break;
+                case ItemCategory.소모품:
+
+                    break;
+            }
+        }
+
+        //인벤토리 및 능력치 동기화
+        //...
+
+    }
+
+    /// <summary>
+    /// 인벤토리에 아이템을 삭제합니다.
+    /// </summary>
+    /// <param name="idx">인벤토리 슬롯 인덱스</param>
+    /// <param name="itemName">삭제할 아이템 이름</param>
+    public void RemoveItem_Inventory(int idx, string itemName)
+    {
+        ItemBase item = ItemManager.ItemDB[itemName];
+
+        inventory[idx] = "";
+
+        for (int i = 0; i < item.specs.Count; i++)
+        {
+            int tempValue = item.specs[i].value;
+            switch (item.specs[i].category)
+            {
+                case ItemCategory.공격력:
+                    _attackDamage -= tempValue;
+                    break;
+                case ItemCategory.마법공격력:
+                    _mattackDamage -= tempValue;
+                    break;
+                case ItemCategory.방어력:
+                    _defence -= tempValue;
+                    break;
+                case ItemCategory.마법방어력:
+                    _mdefence -= tempValue;
+                    break;
+                case ItemCategory.체력:
+                    _maxHP -= tempValue;
+                    break;
+                case ItemCategory.이동속도:
+                    _speed -= tempValue;
+                    break;
+                case ItemCategory.소모품:
+
+                    break;
+            }
+        }
     }
 }
