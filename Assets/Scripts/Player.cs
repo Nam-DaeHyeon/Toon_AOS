@@ -124,6 +124,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
             _mainCamera.GetComponent<CameraFilter>().setGray = false;
 
             SetInitAddr_SkillSlot();
+            SetInitAddr_ItemViewer();
+
             photonView.RPC("CallbackRPC_InitParameter", RpcTarget.AllBuffered, photonView.ViewID, GameManager.USER_CHARACTER);
 
             StartCoroutine(IE_BaseController());
@@ -936,6 +938,12 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
             case "SPEED":
                 _speed += corr * value;
                 break;
+        }
+
+        if(photonView.IsMine)
+        {
+            //스킬로 인한 능력치 변환값들을 뷰어와 동기화 표시합니다.
+            _viewer.Update_PlayerSpec();
         }
     }
 

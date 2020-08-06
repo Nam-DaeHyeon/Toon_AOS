@@ -44,17 +44,9 @@ public class ItemViewer : MonoBehaviour
     //카테고리 토글 활성화 배열
     //공격력 | 마법공격력 | 방어력 | 마법방어력 | 체력 | 이동속도 | 소모품
     [SerializeField] Toggle[] _categoryToggles;
-
-    private void Awake()
-    {
-        StartCoroutine(IE_Awake());
-    }
-
-    IEnumerator IE_Awake()
-    {
-        if (!GetComponent<PhotonView>().IsMine) yield break;
-        yield return new WaitUntil(() => FindObjectOfType<Player>() != null);
-
+    
+    public void SetInitAddr()
+    { 
         _owner = MainManager.instance.owner;
         //SetInit_OwnerPlayer();
 
@@ -155,7 +147,7 @@ public class ItemViewer : MonoBehaviour
     /// <summary>
     /// 플레이어 능력치 정보를 갱신합니다.
     /// </summary>
-    private void Update_PlayerSpec()
+    public void Update_PlayerSpec()
     {
         //공격력 | 마법공격력 | 방어력 | 마법방어력 | 이동속도
         _playerSpec[0].text = "공격력 " + _owner.Get_Spec(ItemCategory.공격력).ToString();

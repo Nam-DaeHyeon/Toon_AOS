@@ -8,6 +8,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     [Header("Private UI")]
     [SerializeField] UI_SkillSlot[] _skillSlots;
     [SerializeField] UI_SkillDesc _skillDesc;
+    private ItemViewer _viewer;
     public Canvas UI_WorldCvs;
 
     /// <summary>
@@ -30,6 +31,14 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         Hide_SkillDesc();
 
         GetSkillPoint();
+    }
+
+    private void SetInitAddr_ItemViewer()
+    {
+        ItemViewer viewer = FindObjectOfType<ItemViewer>();
+        viewer.SetInitAddr();
+
+        _viewer = viewer;
     }
 
     #region 스킬 관련
