@@ -57,7 +57,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 2100000, guid: 8dc3bfad9d9bd1140bb865560545954d, type: 2}
   m_Color: {r: 1, g: 0, b: 0, a: 1}
   m_RaycastTarget: 0
   m_OnCullStateChanged:
@@ -87,7 +87,7 @@ GameObject:
   - component: {fileID: 2114023252444895018}
   - component: {fileID: 5396182033421609775}
   - component: {fileID: 1390078366903297029}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: PlayerProjectile (3)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -201,7 +201,7 @@ GameObject:
   - component: {fileID: 5628526789068116572}
   - component: {fileID: 7805020607786589387}
   - component: {fileID: 8467842031861540859}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: PlayerProjectile (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -315,7 +315,7 @@ GameObject:
   - component: {fileID: 1717356790884035958}
   - component: {fileID: 8013631684122115960}
   - component: {fileID: 2705077383150278260}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: PlayerProjectile
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -429,7 +429,7 @@ GameObject:
   - component: {fileID: 3632043187357281566}
   - component: {fileID: 1857200067349374243}
   - component: {fileID: 6101225404338141946}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: PlayerProjectile (2)
   m_TagString: Untagged
   m_Icon: {fileID: 0}

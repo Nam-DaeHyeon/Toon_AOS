@@ -127,6 +127,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
             SetInitAddr_ItemViewer();
 
             photonView.RPC("CallbackRPC_InitParameter", RpcTarget.AllBuffered, photonView.ViewID, GameManager.USER_CHARACTER);
+            _viewer.Update_PlayerSpecHp();
 
             StartCoroutine(IE_BaseController());
             StartCoroutine(IE_PlayerInputKeyManager());
@@ -215,7 +216,6 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         for (int i = 0; i < _projectiles.Length; i++)
         {
             _projectiles[i].transform.parent = null;
-            _projectiles[i].gameObject.layer = 0; //LayerMask.NameToLayer("Default");
             _projectiles[i].gameObject.SetActive(false);
         }
     }
@@ -702,6 +702,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     public void TakeDamage(float damage)
     {
         if (_currHP < 0) return;
+        if (isInvincible) return;
 
         int endDamage = (int)damage;
         photonView.RPC("CallbackRPC_SyncHP", RpcTarget.All, endDamage, false);
@@ -715,9 +716,12 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     public void TakeMDamage(float damage)
     {
         if (_currHP < 0) return;
+        if (isInvincible) return;
 
         int endDamage = (int)damage;
         photonView.RPC("CallbackRPC_SyncHP", RpcTarget.All, endDamage, true);
+
+        _viewer.Update_PlayerSpecHp();
     }
 
     /// <summary>
@@ -730,6 +734,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
 
         int endAmount = -1 * (int)healAmount;
         photonView.RPC("CallbackRPC_SyncHP", RpcTarget.All, endAmount, true);
+
+        _viewer.Update_PlayerSpecHp();
     }
 
     public void TakeDamage_IgnoreDefence(float damage)
@@ -737,6 +743,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         if (_currHP < 0) return;
 
         photonView.RPC("CallbackRPC_SyncHPIgnoreDefence", RpcTarget.All, photonView.ViewID, damage);
+
+        _viewer.Update_PlayerSpecHp();
     }
 
     /// <summary>
@@ -841,6 +849,11 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     public float Get_Speed()
     {
         return _speed;
+    }
+
+    public float Get_CurrentHP()
+    {
+        return _currHP;
     }
 
     public float Get_MaxHP()

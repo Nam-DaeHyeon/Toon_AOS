@@ -216,16 +216,28 @@ public class PlayerProjectile : MonoBehaviourPun
     private void TriggerEnter_SimpleThings(Collider other)
     {
         Player colplayer = other.GetComponent<Player>();
-        if (colplayer == null) return;
-        if (colplayer.photonView.IsMine) return;
-        
-        if (Check_InSkillArea(colplayer.transform.position))
-        {
-            if (colliderPlayers.Contains(colplayer)) return;
-            colliderPlayers.Add(colplayer);
+        Monster colMonster = other.GetComponent<Monster>();
 
-            colplayer.TakeDamage(_setSkill.Get_EffectiveDamage());
-            colplayer.TakeMDamage(_setSkill.Get_EffectiveMagicDamage());
+        if (colplayer != null)
+        {
+            if (colplayer.photonView.IsMine) return;
+
+            if (Check_InSkillArea(colplayer.transform.position))
+            {
+                if (colliderPlayers.Contains(colplayer)) return;
+                colliderPlayers.Add(colplayer);
+
+                colplayer.TakeDamage(_setSkill.Get_EffectiveDamage());
+                colplayer.TakeMDamage(_setSkill.Get_EffectiveMagicDamage());
+            }
+        }
+        else if(colMonster != null)
+        {
+            if (Check_InSkillArea(colMonster.transform.position))
+            {
+                colMonster.TakeDamage(_setSkill.Get_EffectiveDamage());
+                colMonster.TakeMDamage(_setSkill.Get_EffectiveMagicDamage());
+            }
         }
     }
     
@@ -250,6 +262,14 @@ public class PlayerProjectile : MonoBehaviourPun
         else if(other.GetComponent<PlayerProjectile>() != null)
         {
             return;
+        }
+        //몬스터와 충돌
+        else if (other.GetComponent<Monster>() != null)
+        {
+            Monster colMonster = other.GetComponent<Monster>();
+            colMonster.TakeDamage(_setSkill.Get_EffectiveDamage());
+            colMonster.TakeMDamage(_setSkill.Get_EffectiveMagicDamage());
+            myOption = PROJECTILE_OPTION.투사체충돌발생;
         }
         //나머지는 맵과 충돌한 경우..
         else

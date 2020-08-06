@@ -15,6 +15,8 @@ public class ItemViewer : MonoBehaviour
     [SerializeField] GameObject _playerSpecRoot;
     TMP_Text[] _playerSpec;
     TMP_Text[] _playerItems;
+    Image _playerHPBar;
+    TMP_Text _playerHPText;
 
     //아이템 검색 창
     [SerializeField] TMP_InputField _searchField;
@@ -88,6 +90,12 @@ public class ItemViewer : MonoBehaviour
             {
                 _playerSpec[i] = temp[i];
             }
+            //체력바 (텍스트)
+            else if(i == temp.Length - 1)
+            {
+                _playerHPText = temp[i];
+                _playerHPBar = _playerHPText.transform.parent.GetComponent<Image>();
+            }
             else
             {
                 _playerItems[i - 5] = temp[i];
@@ -155,6 +163,15 @@ public class ItemViewer : MonoBehaviour
         _playerSpec[2].text = "방어력 " + _owner.Get_Spec(ItemCategory.방어력).ToString();
         _playerSpec[3].text = "마법방어력 " + _owner.Get_Spec(ItemCategory.마법방어력).ToString();
         _playerSpec[4].text = "이동속도 " + _owner.Get_Spec(ItemCategory.이동속도).ToString();
+
+        //Update_PlayerSpecHp();
+    }
+
+    public void Update_PlayerSpecHp()
+    {
+        _playerHPBar.fillAmount = _owner.Get_CurrentHP() / _owner.Get_MaxHP();
+        _playerHPText.text = _owner.Get_CurrentHP() + "/" + _owner.Get_MaxHP();
+        //_owner.TakeHeal(0);
     }
 
     //모든 아이템들의 목록을 확인할 수 있는 창을 엽니다. (+검색 기능)
