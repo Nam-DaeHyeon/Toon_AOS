@@ -862,6 +862,16 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         return _maxHP;
     }
 
+    public float Get_AttackDamage()
+    {
+        return _attackDamage;
+    }
+
+    public float Get_MAttackDamage()
+    {
+        return _mattackDamage;
+    }
+
     /// <summary>
     /// 쉴드를 제거합니다.
     /// </summary>

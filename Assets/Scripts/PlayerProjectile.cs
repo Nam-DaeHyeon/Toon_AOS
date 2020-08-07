@@ -219,6 +219,8 @@ public class PlayerProjectile : MonoBehaviourPun
         Player colplayer = other.GetComponent<Player>();
         Monster colMonster = other.GetComponent<Monster>();
 
+        Player owner = _playerTr.GetComponent<Player>();
+
         if (colplayer != null)
         {
             if (colplayer.photonView.IsMine) return;
@@ -228,10 +230,10 @@ public class PlayerProjectile : MonoBehaviourPun
                 if (colliderPlayers.Contains(colplayer)) return;
                 colliderPlayers.Add(colplayer);
 
-                colplayer.TakeDamage(_setSkill.Get_EffectiveDamage());
-                colplayer.TakeMDamage(_setSkill.Get_EffectiveMagicDamage());
+                colplayer.TakeDamage(_setSkill.Get_EffectiveDamage() + owner.Get_AttackDamage());
+                colplayer.TakeMDamage(_setSkill.Get_EffectiveMagicDamage() + owner.Get_MAttackDamage());
 
-                if (colplayer.Get_CurrentHP() <= 0) _playerTr.GetComponent<Player>().Add_Money(5);
+                if (colplayer.Get_CurrentHP() <= 0) owner.Add_Money(5);
             }
         }
         else if(colMonster != null)
@@ -242,10 +244,10 @@ public class PlayerProjectile : MonoBehaviourPun
 
                 colMonster.Set_Target(_playerTr.GetComponent<Player>());
 
-                colMonster.TakeDamage(_setSkill.Get_EffectiveDamage());
-                colMonster.TakeMDamage(_setSkill.Get_EffectiveMagicDamage());
+                colMonster.TakeDamage(_setSkill.Get_EffectiveDamage() + owner.Get_AttackDamage());
+                colMonster.TakeMDamage(_setSkill.Get_EffectiveMagicDamage() + owner.Get_MAttackDamage());
 
-                if (colMonster.Get_CurrentHP() <= 0) _playerTr.GetComponent<Player>().Add_Money(10);
+                if (colMonster.Get_CurrentHP() <= 0) owner.Add_Money(10);
             }
         }
     }
@@ -278,10 +280,12 @@ public class PlayerProjectile : MonoBehaviourPun
             Monster colMonster = other.GetComponent<Monster>();
             this.colMonster = colMonster;
 
-            colMonster.Set_Target(_playerTr.GetComponent<Player>());
+            Player owner = _playerTr.GetComponent<Player>();
 
-            colMonster.TakeDamage(_setSkill.Get_EffectiveDamage());
-            colMonster.TakeMDamage(_setSkill.Get_EffectiveMagicDamage());
+            colMonster.Set_Target(owner);
+
+            colMonster.TakeDamage(_setSkill.Get_EffectiveDamage() + owner.Get_AttackDamage());
+            colMonster.TakeMDamage(_setSkill.Get_EffectiveMagicDamage() + owner.Get_MAttackDamage());
             myOption = PROJECTILE_OPTION.투사체충돌발생;
         }
         //나머지는 맵과 충돌한 경우..
