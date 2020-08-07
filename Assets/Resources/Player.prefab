@@ -974,6 +974,7 @@ MonoBehaviour:
   - 
   - 
   - 
+  money: 0
   _meleeProjectile: []
   _projectiles:
   - {fileID: 5793220775725226228}

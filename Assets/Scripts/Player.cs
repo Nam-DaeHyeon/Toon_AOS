@@ -56,6 +56,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     public int _skillPoint { set; get; } = 0;
 
     public string[] inventory = new string[6];
+    public int money = 0;
     #endregion
 
     #region 플레이어 행동 트리거 및 변수
@@ -789,7 +790,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         _currHP -= tempDamage;
         _imgHPBar.fillAmount = _currHP / _maxHP;
 
-        if(_currHP < 0)
+        if(_currHP <= 0)
         {
             Set_StateMachine(PLAYER_STATE.DEAD);
         }
@@ -905,9 +906,9 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     /// <param name="damage">도트당 데미지</param>
     /// <param name="delay">데미지 선 딜레이 (초 단위)</param>
     /// <param name="duration">지속시간</param>
-    public void GetDotDam_FromOthers(string paramName, int damage, float delay, float duration)
+    public void GetDotDam_FromOthers(string paramName, int damage, float delay, float duration, Player attacker)
     {
-        StartCoroutine(IE_DotDamTimer(paramName, damage, delay, duration));
+        StartCoroutine(IE_DotDamTimer(paramName, damage, delay, duration, attacker));
     }
 
     private IEnumerator IE_BuffTimer(string paramName, int value, bool isBuff, float duration)
@@ -917,7 +918,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         photonView.RPC("CallbackRPC_SyncParam", RpcTarget.All, paramName, value, !isBuff);
     }
 
-    private IEnumerator IE_DotDamTimer(string paramName, int damage, float delay, float duration)
+    private IEnumerator IE_DotDamTimer(string paramName, int damage, float delay, float duration, Player attacker)
     {
         float timer = duration;
         while(timer >= 0)
@@ -926,8 +927,11 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
             yield return new WaitForSeconds(delay);
 
             TakeDamage_IgnoreDefence(damage);
-
-
+            if (_currHP <= 0)
+            {
+                attacker.Add_Money(5);
+                yield break;
+            }
             //photonView.RPC("CallbackRPC_SyncHPIgnoreDefence", RpcTarget.All, photonView.ViewID, damage);
         }
 
@@ -1260,5 +1264,10 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
                     break;
             }
         }
+    }
+
+    public void Add_Money(int amount)
+    {
+        money += amount;
     }
 }

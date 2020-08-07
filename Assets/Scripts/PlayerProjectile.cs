@@ -26,6 +26,7 @@ public class PlayerProjectile : MonoBehaviourPun
     /// 프로젝타일과 충돌한 플레이어.. 상태이상 관련 처리를 위해 따로 저장한다.
     /// </summary>
     public List<Player> colliderPlayers { get; set; } = new List<Player>();
+    public Monster colMonster { get; set; }
 
     GameObject TempMissileObj = null;
 
@@ -229,14 +230,22 @@ public class PlayerProjectile : MonoBehaviourPun
 
                 colplayer.TakeDamage(_setSkill.Get_EffectiveDamage());
                 colplayer.TakeMDamage(_setSkill.Get_EffectiveMagicDamage());
+
+                if (colplayer.Get_CurrentHP() <= 0) _playerTr.GetComponent<Player>().Add_Money(5);
             }
         }
         else if(colMonster != null)
         {
             if (Check_InSkillArea(colMonster.transform.position))
             {
+                this.colMonster = colMonster;
+
+                colMonster.Set_Target(_playerTr.GetComponent<Player>());
+
                 colMonster.TakeDamage(_setSkill.Get_EffectiveDamage());
                 colMonster.TakeMDamage(_setSkill.Get_EffectiveMagicDamage());
+
+                if (colMonster.Get_CurrentHP() <= 0) _playerTr.GetComponent<Player>().Add_Money(10);
             }
         }
     }
@@ -267,6 +276,10 @@ public class PlayerProjectile : MonoBehaviourPun
         else if (other.GetComponent<Monster>() != null)
         {
             Monster colMonster = other.GetComponent<Monster>();
+            this.colMonster = colMonster;
+
+            colMonster.Set_Target(_playerTr.GetComponent<Player>());
+
             colMonster.TakeDamage(_setSkill.Get_EffectiveDamage());
             colMonster.TakeMDamage(_setSkill.Get_EffectiveMagicDamage());
             myOption = PROJECTILE_OPTION.투사체충돌발생;

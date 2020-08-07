@@ -80,6 +80,9 @@ MonoBehaviour:
   - CallbackRPC_DeleteTrap
   - CallbackRPC_DestroyObject
   - CallbackRPC_ParentWorldCanvas
+  - RPC_SetInit_Parameters
+  - CallbackRPC_Respawn_Monster
+  - CallbackRPC_SetInit_Parameters
   DisableAutoOpenWizard: 1
   ShowSettings: 0
   DevRegionSetOnce: 1

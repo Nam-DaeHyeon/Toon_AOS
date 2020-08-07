@@ -37,6 +37,17 @@ public class FireTrap : MonoBehaviourPun
 
             hasColl = true;
         }
+
+        else if(other.GetComponent<Monster>() != null)
+        {
+            Monster target = other.GetComponent<Monster>();
+            target.TakeDamage_IgnoreDefence(damage);
+            
+            MainManager.instance.SetActive_SharedEffect("TrapHit", transform);
+            photonView.RPC("CallbackRPC_DeleteTrap", RpcTarget.All, photonView.ViewID);
+
+            hasColl = true;
+        }
     }
 
     [PunRPC]

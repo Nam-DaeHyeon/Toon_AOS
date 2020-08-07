@@ -67,12 +67,15 @@ public class sk_Cat01_PoisonArrow : Skill
         {
             MainManager.instance.SetActive_SkillEffect("PoisonArrowHit", projectile.transform);
             
-            //둔화 처리
+            //중독 처리 : 플레이어
             foreach (Player target in projectile.colliderPlayers)
             {
                 if (target == null) continue;
-                target.GetDotDam_FromOthers("POISON", (int)(target.Get_MaxHP() * 0.1F + (skillLevel - 1)), 1, duration);
+                target.GetDotDam_FromOthers("POISON", (int)(target.Get_MaxHP() * 0.1F + (skillLevel - 1)), 1, duration, player);
             }
+
+            //중독 처리 : 몬스터
+            if(projectile.colMonster != null) projectile.colMonster.GetDotDam_FromOthers("POISON", (int)(projectile.colMonster.Get_MaxHP() * 0.1F + (skillLevel - 1)), 1, duration, player);
         }
     }
 

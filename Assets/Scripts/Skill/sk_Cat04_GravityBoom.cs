@@ -85,6 +85,8 @@ public class sk_Cat04_GravityBoom : Skill
                 //target.transform.Translate(dir * gravityPower * Time.deltaTime);
             }
 
+            if(projectile.colMonster != null)
+
             gravityPower -= Time.deltaTime;
 
             yield return new WaitForSeconds(0.05f);

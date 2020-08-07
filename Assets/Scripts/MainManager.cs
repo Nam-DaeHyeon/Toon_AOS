@@ -247,4 +247,29 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
             skillPool = (Dictionary<string, GameObject>)stream.ReceiveNext();
         }
     }
+
+    /// <summary>
+    /// 몬스터를 재소환합니다.
+    /// </summary>
+    /// <param name="viewId">소환하고자 하는 몬스터의 포톤뷰 아이디</param>
+    /// <param name="delay">재소환 지연시간</param>
+    public void SetRespawn_Monster(int viewId, float delay)
+    {
+        photonView.RPC("CallbackRPC_Respawn_Monster", RpcTarget.MasterClient, viewId, delay);
+    }
+
+    [PunRPC]
+    private void CallbackRPC_Respawn_Monster(int viewId, float delay)
+    {
+        Monster monster = PhotonView.Find(viewId).GetComponent<Monster>();
+        StartCoroutine(IE_Respawm_Monster(monster, delay));
+    }
+
+    IEnumerator IE_Respawm_Monster(Monster obj, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+
+        obj.SetRespawn();
+        obj.gameObject.SetActive(true);
+    }
 }
