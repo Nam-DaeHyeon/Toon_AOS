@@ -14,7 +14,7 @@ public enum MONSTER_STATE
     DEAD
 }
 
-public class Monster : MonoBehaviourPun
+public class Monster : MonoBehaviourPun, ITargetUnit
 {
     MONSTER_STATE _state = MONSTER_STATE.IDLE;
 
@@ -131,22 +131,34 @@ public class Monster : MonoBehaviourPun
         while(_state.Equals(MONSTER_STATE.TRACE))
         {
             _agent.SetDestination(_targetPlayer.transform.position);
-            if (_agent.remainingDistance <= _attackDistance) Set_StateMachine(MONSTER_STATE.ATTACK);
+            if (Vector3.Distance(transform.position, _targetPlayer.transform.position) <= _attackDistance) Set_StateMachine(MONSTER_STATE.ATTACK);
             else if (Vector3.Distance(transform.position, _spwnPos) >= _detectDistance * 3f) Set_StateMachine(MONSTER_STATE.RETURN);
 
             _hpBar.transform.rotation = _hpBarRot;
-            yield return null;
+
+            //yield return null;
+            yield return new WaitForSeconds(0.05f);
         }
     }
 
     IEnumerator IE_Attack()
     {
+        _agent.isStopped = true;
+
         yield return new WaitForSeconds(1.5f);
 
         _targetPlayer.TakeDamage(_attackDamage);
+        
+        _agent.isStopped = false;
 
-        if (Vector3.Distance(transform.position, _spwnPos) >= _detectDistance * 3f) Set_StateMachine(MONSTER_STATE.RETURN);
-        else Set_StateMachine(MONSTER_STATE.TRACE);
+        if (_targetPlayer.Get_CurrentHP() <= 0||
+            Vector3.Distance(transform.position, _spwnPos) >= _detectDistance * 3f)
+        {
+            Set_StateMachine(MONSTER_STATE.RETURN);
+            yield break;
+        }
+
+        Set_StateMachine(MONSTER_STATE.TRACE);
     }
 
     IEnumerator IE_Return()
@@ -159,14 +171,15 @@ public class Monster : MonoBehaviourPun
         {
             if (_agent.remainingDistance < 0.5f) Set_StateMachine(MONSTER_STATE.IDLE); 
 
-            if((timer -= Time.deltaTime) < 0)
+            if((timer -= 0.05f) < 0)
             {
                 timer = 0.5f;
                 TakeHealPer10();
             }
 
             _hpBar.transform.rotation = _hpBarRot;
-            yield return null;
+            //yield return null;
+            yield return new WaitForSeconds(0.05f);
         }
     }
 
@@ -289,6 +302,9 @@ public class Monster : MonoBehaviourPun
 
         }
 
+        //회복하는 경우(음수)와 단순히 신호를 보내는 경우(0)를 제외한 피해를 받은 경우만 텍스트 로그를 출력한다.
+        if(tempDamage > 0) MainManager.instance.SetVisible_HitLog(transform.position, tempDamage);
+
         _currHP -= tempDamage;
         _hpBar.fillAmount = _currHP / _maxHP;
 
@@ -316,4 +332,10 @@ public class Monster : MonoBehaviourPun
     {
         return _maxHP;
     }
+
+    public Vector3 Get_Position()
+    {
+        return transform.position;
+    }
+
 }

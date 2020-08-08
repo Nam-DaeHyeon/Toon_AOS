@@ -53,6 +53,7 @@ public class sk_Cat01_PoisonArrow : Skill
             effectObj.transform.rotation = projectile.transform.rotation;
         }
         MainManager.instance.Set_ActiveProjectile(projectile.gameObject, true);
+        //projectile.gameObject.SetActive(true);
 
         //상태 변환
         player.Set_StateMachine(PLAYER_STATE.IDLE);

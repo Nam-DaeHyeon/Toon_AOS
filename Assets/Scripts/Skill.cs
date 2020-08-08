@@ -168,4 +168,10 @@ public class Skill : MonoBehaviourPun
 
         return desc;
     }
+
+    public bool Check_IsMagicDamage()
+    {
+        if (mdamage != null) return true;
+        return false;
+    }
 }

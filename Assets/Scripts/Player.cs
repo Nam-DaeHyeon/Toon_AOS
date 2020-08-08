@@ -25,7 +25,7 @@ public enum PLAYER_STATE
     DEAD
 }
 
-public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
+public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITargetUnit
 {
     /// <summary> 게임에 온전히 로드된 경우 활성화 : 이외 공격 무효 </summary>
     bool m_ready = false;
@@ -66,7 +66,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     Vector3 dir;
 
     bool atkToggle = false;    //공격 대상 지정 상태
-    Player atkTargetPlayer = null;  //공격 대상
+    ITargetUnit targetUnit = null;  //공격 대상
     float atkAnimTime = 1.042f;    //공격 애니메이션 재생 시간
 
     Shader baseShader;
@@ -190,7 +190,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         player.distance = 0f;
         player.dir = Vector3.zero;
         player.atkToggle = false;
-        player.atkTargetPlayer = null;
+        player.targetUnit = null;
 
         //로컬 쉐이더 초기화
         player._skinRender.material.shader = baseShader;
@@ -266,7 +266,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
             }
             #endregion
 
-            if (atkTargetPlayer == null)
+            if (targetUnit == null)
             {
                 #region 이동관련 : 입력 좌표에 도달했는가
                 if (isMove)
@@ -288,7 +288,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
             }
             else
             {
-                distance = Vector3.Distance(transform.position, atkTargetPlayer.transform.position);
+                distance = Vector3.Distance(transform.position, targetUnit.Get_Position());
                 //공격범위에 들어왔다면 공격
                 if (distance < _attackDistance)
                 {
@@ -307,7 +307,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
                     }
                     isMove = true;
 
-                    _animator.transform.LookAt(new Vector3(atkTargetPlayer.transform.position.x, transform.position.y, atkTargetPlayer.transform.position.z));
+                    _animator.transform.LookAt(new Vector3(targetUnit.Get_Position().x, transform.position.y, targetUnit.Get_Position().z));
 
                     //Correction_DirectionVector();
                     transform.Translate(dir * _speed * Time.deltaTime, Space.World);
@@ -331,8 +331,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
 
         while(_currHP > 0 && _myState.Equals(PLAYER_STATE.ATTACK))
         {
-            if (atkTargetPlayer == null) break;
-            _animator.transform.LookAt(atkTargetPlayer.transform.position);
+            if (targetUnit == null) break;
+            _animator.transform.LookAt(targetUnit.Get_Position());
 
             //공격모션 중간에 우클릭을 통해 공격캔슬, 이동한다.
             if (Input.GetMouseButtonDown(1))
@@ -346,10 +346,10 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
             if (delay <= 0)
             {
                 //공격 후 공격 범위에 있다면 공격을 지속하고, 아니라면 기본 컨트롤러로 상태를 변환한다.
-                distance = Vector3.Distance(atkTargetPlayer.transform.position, transform.position);
+                distance = Vector3.Distance(targetUnit.Get_Position(), transform.position);
                 if (distance > _attackDistance)
                 {
-                    atkTargetPlayer = null;
+                    targetUnit = null;
                     Set_StateMachine(PLAYER_STATE.IDLE);
                 }
                 else
@@ -434,7 +434,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
             if (Input.GetMouseButtonDown(0))
             {
                 ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
-                if (Physics.Raycast(ray, out hit, 100, LayerMask.GetMask("Player")))
+                if (Physics.Raycast(ray, out hit, 100, LayerMask.GetMask("Player") | LayerMask.GetMask("Monster")))
                 {
                     _targetPos = hit.point;
 
@@ -445,7 +445,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
                     //회전
                     _animator.transform.LookAt(new Vector3(_targetPos.x, transform.position.y, _targetPos.z));
 
-                    atkTargetPlayer = hit.transform.GetComponent<Player>();
+                    targetUnit = hit.transform.GetComponent<ITargetUnit>();
                 }
 
                 break;
@@ -489,7 +489,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
                 _animator.transform.LookAt(new Vector3(_targetPos.x, transform.position.y, _targetPos.z));
 
                 //공격 대상 초기화
-                atkTargetPlayer = null;
+                targetUnit = null;
             }
         }
     }
@@ -608,15 +608,22 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         //공격 상태가 아니라면 리턴
         if (!_myState.Equals(PLAYER_STATE.ATTACK)) return;
         //중간에 대상 플레이어가 이탈한 경우 리턴
-        if (atkTargetPlayer == null) return;
+        if (targetUnit == null) return;
 
-        if (_meleeProjectile.Length == 0) atkTargetPlayer.TakeDamage(_attackDamage);
+        //근접공격
+        if (_meleeProjectile.Length == 0)
+        {
+            targetUnit.Set_Target(this);
+            targetUnit.TakeDamage(_attackDamage);
+        }
+        //원거리 공격일 경우 등록해둔 밀리프로젝타일 풀을 돌려가며 사용한다.
         else
         {
             if (_meleeProjectile[meleeIndex].gameObject.activeInHierarchy)
             {
                 StopCoroutine(meleeCoroutine[meleeIndex]);
                 //StopCoroutine(IE_MissileAttack(45f, meleeIndex));
+                
                 MainManager.instance.Set_ActiveProjectile(_meleeProjectile[meleeIndex].gameObject, false);
                 //_meleeProjectile[meleeIndex].gameObject.SetActive(false);
             }
@@ -643,20 +650,23 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         MainManager.instance.Set_ActiveProjectile(_meleeProjectile[index].gameObject, true);
         //_meleeProjectile[index].gameObject.SetActive(true);
 
-        Player target = atkTargetPlayer;
         do
         {
-            if (target == null) break;
-            subDistance = Vector3.Distance(target.transform.position, new Vector3(_meleeProjectile[index].transform.position.x, target.transform.position.y, _meleeProjectile[index].transform.position.z));
+            if (targetUnit == null) break;
+            subDistance = Vector3.Distance(targetUnit.Get_Position(), new Vector3(_meleeProjectile[index].transform.position.x, targetUnit.Get_Position().y, _meleeProjectile[index].transform.position.z));
 
-            dir = target.transform.position - new Vector3(_meleeProjectile[index].transform.position.x, target.transform.position.y, _meleeProjectile[index].transform.position.z);
+            dir = targetUnit.Get_Position() - new Vector3(_meleeProjectile[index].transform.position.x, targetUnit.Get_Position().y, _meleeProjectile[index].transform.position.z);
             dir.Normalize();
             _meleeProjectile[index].Translate(dir * _speed * Time.deltaTime, Space.World);
 
             yield return null;
         } while (subDistance >= 0.1f);
 
-        if (target != null) target.TakeDamage(_attackDamage);
+        if (targetUnit != null)
+        {
+            targetUnit.Set_Target(this);
+            targetUnit.TakeDamage(_attackDamage);
+        }
         MainManager.instance.Set_ActiveProjectile(_meleeProjectile[index].gameObject, false);
         // _meleeProjectile[index].gameObject.SetActive(false);
         //_meleeProjectile.parent = _animator.transform;
@@ -681,14 +691,14 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         }
         else
         {
-            if (atkTargetPlayer == null)
+            if (targetUnit == null)
             {
                 dir = _targetPos - transform.position;
                 dir.Normalize();
             }
             else
             {
-                dir = atkTargetPlayer.transform.position - transform.position;
+                dir = targetUnit.Get_Position() - transform.position;
                 dir.Normalize();
             }
         }
@@ -707,6 +717,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
 
         int endDamage = (int)damage;
         photonView.RPC("CallbackRPC_SyncHP", RpcTarget.All, endDamage, false);
+
+        _viewer.Update_PlayerSpecHp();
     }
 
     /// <summary>
@@ -786,6 +798,9 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
         {
             
         }
+
+        //회복하는 경우(음수)와 단순히 신호를 보내는 경우(0)를 제외한 피해를 받은 경우만 텍스트 로그를 출력한다.
+        if (tempDamage > 0) MainManager.instance.SetVisible_HitLog(transform.position, tempDamage);
 
         _currHP -= tempDamage;
         _imgHPBar.fillAmount = _currHP / _maxHP;
@@ -1279,5 +1294,18 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     public void Add_Money(int amount)
     {
         money += amount;
+    }
+
+    public Vector3 Get_Position()
+    {
+        return transform.position;
+    }
+
+    /// <summary>
+    /// [몬스터 전용] 자신을 때린 플레이어를 등록합니다. 
+    /// </summary>
+    public void Set_Target(Player attacker)
+    {
+        return;
     }
 }

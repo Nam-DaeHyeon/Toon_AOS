@@ -124,7 +124,8 @@ public class PlayerProjectile : MonoBehaviourPun
         #endregion
 
         Vector3 dir = _playerTr.GetComponent<Player>().GetForwordDir_LineRender();
-        photonView.RPC("CallbackRPC_MissileProecess", RpcTarget.All, dir, _setSkill.skillMissileExistTime, _setSkill.skillMissileSpeed);
+        StartCoroutine(IE_PlayMissile(dir, _setSkill.skillMissileExistTime, _setSkill.skillMissileSpeed));
+        //photonView.RPC("CallbackRPC_MissileProecess", RpcTarget.All, dir, _setSkill.skillMissileExistTime, _setSkill.skillMissileSpeed);
     }
 
 
@@ -199,6 +200,8 @@ public class PlayerProjectile : MonoBehaviourPun
     private void OnTriggerEnter(Collider other)
     {
         Debug.Log(other.name + " (" + LayerMask.LayerToName(other.gameObject.layer) + ")");
+
+        if (!photonView.IsMine) return;
         
         switch(myOption)
         {
@@ -230,8 +233,8 @@ public class PlayerProjectile : MonoBehaviourPun
                 if (colliderPlayers.Contains(colplayer)) return;
                 colliderPlayers.Add(colplayer);
 
-                colplayer.TakeDamage(_setSkill.Get_EffectiveDamage() + owner.Get_AttackDamage());
-                colplayer.TakeMDamage(_setSkill.Get_EffectiveMagicDamage() + owner.Get_MAttackDamage());
+                if (!_setSkill.Check_IsMagicDamage()) colplayer.TakeDamage(_setSkill.Get_EffectiveDamage() + owner.Get_AttackDamage());
+                else colplayer.TakeMDamage(_setSkill.Get_EffectiveMagicDamage() + owner.Get_MAttackDamage());
 
                 if (colplayer.Get_CurrentHP() <= 0) owner.Add_Money(5);
             }
@@ -244,10 +247,10 @@ public class PlayerProjectile : MonoBehaviourPun
 
                 colMonster.Set_Target(_playerTr.GetComponent<Player>());
 
-                colMonster.TakeDamage(_setSkill.Get_EffectiveDamage() + owner.Get_AttackDamage());
-                colMonster.TakeMDamage(_setSkill.Get_EffectiveMagicDamage() + owner.Get_MAttackDamage());
+                if(!_setSkill.Check_IsMagicDamage()) colMonster.TakeDamage(_setSkill.Get_EffectiveDamage() + owner.Get_AttackDamage());
+                else colMonster.TakeMDamage(_setSkill.Get_EffectiveMagicDamage() + owner.Get_MAttackDamage());
 
-                if (colMonster.Get_CurrentHP() <= 0) owner.Add_Money(10);
+                if (colMonster.Get_CurrentHP() <= 0) owner.Add_Money(3);
             }
         }
     }
@@ -284,8 +287,8 @@ public class PlayerProjectile : MonoBehaviourPun
 
             colMonster.Set_Target(owner);
 
-            colMonster.TakeDamage(_setSkill.Get_EffectiveDamage() + owner.Get_AttackDamage());
-            colMonster.TakeMDamage(_setSkill.Get_EffectiveMagicDamage() + owner.Get_MAttackDamage());
+            if (!_setSkill.Check_IsMagicDamage()) colMonster.TakeDamage(_setSkill.Get_EffectiveDamage() + owner.Get_AttackDamage());
+            else colMonster.TakeMDamage(_setSkill.Get_EffectiveMagicDamage() + owner.Get_MAttackDamage());
             myOption = PROJECTILE_OPTION.투사체충돌발생;
         }
         //나머지는 맵과 충돌한 경우..

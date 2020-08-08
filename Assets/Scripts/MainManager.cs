@@ -2,13 +2,18 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
+using TMPro;
 
 public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
 {
     GameObject playerObj;
     GameObject childChar;
 
-    public Player owner;
+    [HideInInspector] public Player owner;
+
+    [SerializeField] GameObject _logPrefab;
+    [SerializeField] int _logPoolCount = 10;
+    Queue<GameObject> _logPool;
 
     public static MainManager s_instance;
     public static MainManager instance
@@ -54,6 +59,8 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
     {
         SetSpawn_Player();
         //if(photonView.IsMine) Add_EffectResource(GameManager.USER_CHARACTER);
+
+        SetInit_LogPool();
 
     }
 
@@ -147,6 +154,7 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
     {
         if (value)
         {
+            //밀리 프로젝타일의 경우
             if (target.GetComponent<PlayerProjectile>() == null)
             {
                 photonView.RPC("CallbackRPC_ActiveObject", RpcTarget.All, target.GetComponent<PhotonView>().ViewID, value);
@@ -255,7 +263,7 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
     /// <param name="delay">재소환 지연시간</param>
     public void SetRespawn_Monster(int viewId, float delay)
     {
-        photonView.RPC("CallbackRPC_Respawn_Monster", RpcTarget.MasterClient, viewId, delay);
+        photonView.RPC("CallbackRPC_Respawn_Monster", RpcTarget.AllBuffered, viewId, delay);
     }
 
     [PunRPC]
@@ -271,5 +279,45 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
 
         obj.SetRespawn();
         obj.gameObject.SetActive(true);
+    }
+
+    /// <summary>
+    /// 피해량을 표시하는 텍스트 로그 풀링을 생성합니다.
+    /// </summary>
+    private void SetInit_LogPool()
+    {
+        if (_logPrefab.activeInHierarchy) _logPrefab.SetActive(false);
+        if (_logPool == null) _logPool = new Queue<GameObject>();
+
+        for (int i = 1; i < _logPoolCount; i++)
+        {
+            GameObject obj = Instantiate(_logPrefab);
+            _logPool.Enqueue(obj);
+        }
+    }
+
+    /// <summary>
+    /// 피해량을 텍스트 로그로 표시합니다.
+    /// </summary>
+    /// <param name="pos">로그를 호출한 월드 좌표</param>
+    /// <param name="logValue">로그에 입력할 피해량</param>
+    public void SetVisible_HitLog(Vector3 pos, int logValue)
+    {
+        GameObject tempObj = _logPool.Dequeue();
+        if (tempObj == null)
+        {
+            tempObj = Instantiate(_logPrefab);
+        }
+        TMP_Text tmpText = tempObj.transform.GetChild(0).GetComponent<TMP_Text>();
+        tmpText.text = logValue.ToString();
+
+        tempObj.transform.position = pos;
+        tempObj.SetActive(true);
+    }
+
+    public void Enqueue_LogPool(GameObject item)
+    {
+        if (_logPool == null) _logPool = new Queue<GameObject>();
+        _logPool.Enqueue(item);
     }
 }
