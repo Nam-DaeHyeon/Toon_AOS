@@ -408,6 +408,14 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
             if (Input.GetKeyDown(KeyCode.LeftControl)) ctrlPressed = true;
             else if (Input.GetKeyUp(KeyCode.LeftControl)) ctrlPressed = false;
 
+            //아이템 사용 퀵버튼
+            if (Input.GetKeyDown(KeyCode.Alpha1)) UseItem_Inventory(0);
+            if (Input.GetKeyDown(KeyCode.Alpha2)) UseItem_Inventory(1);
+            if (Input.GetKeyDown(KeyCode.Alpha3)) UseItem_Inventory(2);
+            if (Input.GetKeyDown(KeyCode.Alpha4)) UseItem_Inventory(3);
+            if (Input.GetKeyDown(KeyCode.Alpha5)) UseItem_Inventory(4);
+            if (Input.GetKeyDown(KeyCode.Alpha6)) UseItem_Inventory(5);
+
             yield return null;
         }
     }
@@ -1239,7 +1247,9 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
                 case ItemCategory.이동속도:
                     _speed += tempValue;
                     break;
-                case ItemCategory.소모품:
+
+                //소모품
+                default:
 
                     break;
             }
@@ -1284,11 +1294,19 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
                 case ItemCategory.이동속도:
                     _speed -= tempValue;
                     break;
-                case ItemCategory.소모품:
+
+                //소모품
+                default:
 
                     break;
             }
         }
+    }
+
+    private void UseItem_Inventory(int invenIdx)
+    {
+        if (inventory[invenIdx] == "") return;
+        _viewer.UseItem(invenIdx);
     }
 
     public void Add_Money(int amount)

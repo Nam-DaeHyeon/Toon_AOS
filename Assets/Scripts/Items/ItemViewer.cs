@@ -21,6 +21,9 @@ public class ItemViewer : MonoBehaviour
     //아이템 검색 창
     [SerializeField] TMP_InputField _searchField;
 
+    //상점 창
+    GameObject _storeWindow;
+
     //통합 아이템 뷰어
     [SerializeField] GameObject _totalSlotRoot;
     //전체 아이템 탐색 뷰어에 배치된 아이템 슬롯 버튼 집합
@@ -51,6 +54,8 @@ public class ItemViewer : MonoBehaviour
     { 
         _owner = MainManager.instance.owner;
         //SetInit_OwnerPlayer();
+
+        _storeWindow = transform.GetChild(1).gameObject;
 
         SetInit_PlayerSpecNInventory();
         SetInit_TotalSlots();
@@ -194,6 +199,12 @@ public class ItemViewer : MonoBehaviour
     //특정 아이템의 자식 트리 및 부모 목록을 확인할 수 있는 창을 엽니다.
     private void Set_DetailViewer(string itemName)
     {
+        //소모품일 경우 중첩으로 쌓인 경우 DB 탐색에 불필요한 키값이 포함되어 있으므로 제외한다.
+        if(itemName.Contains('×'))
+        {
+            itemName = itemName.Substring(0, itemName.IndexOf('×'));
+        }
+
         //선택한 아이템 스펙 정보 표시
         _clickedItemSpec.text = itemName + "\n";
         ItemBase item = ItemManager.ItemDB[itemName];
@@ -368,15 +379,14 @@ public class ItemViewer : MonoBehaviour
     //뷰어를 활성화합니다.
     public void UI_ButtonClick_ViewerOpen()
     {
-        transform.GetChild(1).gameObject.SetActive(true);
+        //transform.GetChild(1).gameObject.SetActive(true);
+        _storeWindow.SetActive(true);
     }
 
     //뷰어 창을 닫습니다.
     public void UI_ButtonClick_ViewerQuit()
     {
-        //gameObject.SetActive(false);
-        //_totalSlotRoot.transform.parent.gameObject.SetActive(false);
-        transform.GetChild(1).gameObject.SetActive(false);
+        _storeWindow.SetActive(false);
     }
     
     //전체 항목 뷰어에서 아이템을 클릭했습니다.
@@ -415,6 +425,10 @@ public class ItemViewer : MonoBehaviour
         Set_DetailViewer(btnAttr.text);
     }
 
+    /// <summary>
+    /// 클릭한 아이템의 상호작용 버튼 속성을 구매(true)로 설정합니다.
+    /// </summary>
+    /// <param name="purchase">구매 true : 판매 false</param>
     private void Update_PurchaseButton(bool purchase)
     {
         //보유 아이템을 클릭했으니 판매 기능을 수행하도록한다.
@@ -487,6 +501,13 @@ public class ItemViewer : MonoBehaviour
         //선택한 아이템 이름 호출
         string itemName = _childSlots[0].GetComponentInChildren<TMP_Text>().text;
 
+        //소모품 여부 확인
+        if(ItemManager.ItemDB[itemName].Check_IsConsumables())
+        {
+            PurchaseItem_Consumables(itemName);
+            return;
+        }
+
         if (_clickedItemButton.text.Contains("구매"))
         {
             for(int i = 0; i< _owner.inventory.Length; i++)
@@ -498,7 +519,7 @@ public class ItemViewer : MonoBehaviour
                     //_owner.inventory[i] = itemName;   //플레이어 인벤토리 데이터
                     _owner.AddItem_Inventory(i, itemName);   //플레이어 인벤토리 데이터
                     _playerItems[i].text = _owner.inventory[i]; //상시 스펙 뷰어 인벤토리 UI
-                    _playerItemsInStore[i].text = _owner.inventory[i]; //상점 인벤토리 UI
+                    _playerItemsInStore[i].text = _playerItems[i].text; //상점 인벤토리 UI
                     
                     break;
                 }
@@ -515,7 +536,7 @@ public class ItemViewer : MonoBehaviour
                     //_owner.inventory[i] = "";   //플레이어 인벤토리 데이터
                     _owner.RemoveItem_Inventory(i, itemName);   //플레이어 인벤토리 데이터
                     _playerItems[i].text = _owner.inventory[i]; //상시 스펙 뷰어 인벤토리 UI
-                    _playerItemsInStore[i].text = _owner.inventory[i]; //상점 인벤토리 UI
+                    _playerItemsInStore[i].text = _playerItems[i].text; //상점 인벤토리 UI
 
                     //버튼 속성 변환
                     Update_PurchaseButton(true);
@@ -526,6 +547,117 @@ public class ItemViewer : MonoBehaviour
         }
 
         Update_PlayerSpec();
+    }
+
+    private void PurchaseItem_Consumables(string itemName)
+    {
+        if (_clickedItemButton.text.Contains("구매"))
+        {
+            AddCount_Consumables(itemName);
+        }
+        else if (_clickedItemButton.text.Contains("판매"))
+        {
+            SubstractCount_Consumables(itemName);
+        }
+    }
+
+    /// <summary>
+    /// 소모품을 인벤토리에 추가합니다. 보유 여부에 따라 1개씩 더합니다.
+    /// </summary>
+    private void AddCount_Consumables(string itemName)
+    {
+        //기존에 있던 슬롯에 아이템 중첩 추가
+        if (_owner.inventory.Contains(itemName))
+        {
+            for (int i = 0; i < _playerItems.Length; i++)
+            {
+                if (_playerItems[i].text.Contains(itemName))
+                {
+                    //기존 1개 보유했을 경우
+                    if (!_playerItems[i].text.Contains('×')) _playerItems[i].text += "×" + 2;
+                    else
+                    {
+                        int idx = _playerItems[i].text.IndexOf('×');
+                        int amount = int.Parse(_playerItems[i].text.Substring(idx + 1));
+
+                        _playerItems[i].text = _playerItems[i].text.Substring(0, idx) + "×" + (amount + 1);
+                    }
+
+                    _playerItemsInStore[i].text = _playerItems[i].text; //상점 인벤토리 UI
+
+                    break;
+                }
+            }
+        }
+        //빈 슬롯에 아이템 새로 추가
+        else
+        {
+            for (int i = 0; i < _owner.inventory.Length; i++)
+            {
+                //빈 슬롯에 아이템 추가
+                if (_owner.inventory[i] == "")
+                {
+                    //구매완료 : 슬롯에 추가
+                    //_owner.inventory[i] = itemName;   //플레이어 인벤토리 데이터
+                    _owner.AddItem_Inventory(i, itemName);   //플레이어 인벤토리 데이터
+                    _playerItems[i].text = _owner.inventory[i]; //상시 스펙 뷰어 인벤토리 UI
+                    _playerItemsInStore[i].text = _playerItems[i].text; //상점 인벤토리 UI
+
+                    break;
+                }
+            }
+        }
+    }
+    
+    /// <summary>
+    /// 소모품을 인벤토리에서 뺍니다. 보유 여부에 따라 1개씩 차감합니다.
+    /// </summary>
+    private void SubstractCount_Consumables(string itemName)
+    {
+        for (int i = 0; i < _owner.inventory.Length; i++)
+        {
+            //해당 슬롯 아이템 제거
+            if (_owner.inventory[i] == itemName)
+            {
+                //기존 1개 보유했을 경우
+                if (!_playerItems[i].text.Contains('×'))
+                {
+                    //판매완료 : 슬롯에서 제거
+                    //_owner.inventory[i] = "";   //플레이어 인벤토리 데이터
+                    _owner.RemoveItem_Inventory(i, itemName);   //플레이어 인벤토리 데이터
+                    _playerItems[i].text = _owner.inventory[i]; //상시 스펙 뷰어 인벤토리 UI
+
+                    //버튼 속성 변환
+                    Update_PurchaseButton(true);
+                }
+                else
+                {
+                    int idx = _playerItems[i].text.IndexOf('×');
+                    int amount = int.Parse(_playerItems[i].text.Substring(idx + 1));
+
+                    _playerItems[i].text = _playerItems[i].text.Substring(0, idx);
+                    if (amount != 2) _playerItems[i].text += "×" + (amount - 1);
+
+                }
+
+                _playerItemsInStore[i].text = _playerItems[i].text; //상점 인벤토리 UI
+
+                break;
+            }
+        }
+    }
+
+    public void UseItem(int index)
+    {
+        string itemName = _owner.inventory[index];
+        ItemBase item = ItemManager.ItemDB[itemName];
+        if (!item.Check_IsConsumables()) return;
+
+        //소모품 능력 적용
+        item.Use_Consumables(_owner);
+
+        //아이템 사용으로 인한 보유 개수 감소
+        SubstractCount_Consumables(itemName);
     }
 
     #endregion

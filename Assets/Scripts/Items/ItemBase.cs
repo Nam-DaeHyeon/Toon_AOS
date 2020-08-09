@@ -11,7 +11,7 @@ public enum ItemCategory
     마법방어력,
     체력,
     이동속도,
-    소모품
+    소모품_체력회복
 }
 
 public struct ST_Ability
@@ -84,7 +84,7 @@ public class ItemBase
     }
 
     /// <summary>
-    /// 특정 카테고리가 해당 아이템에 해당되는지 확인합니다.
+    /// 특정 카테고리 목록들이 해당 아이템에 해당되는지 확인합니다.
     /// </summary>
     public bool CheckLINQ_Category(List<ItemCategory> targets)
     {
@@ -103,5 +103,22 @@ public class ItemBase
 
         if (stack == targets.Count) return true;
         return false;
+    }
+
+    /// <summary>
+    /// 해당 아이템이 소모품인지 확인합니다.
+    /// </summary>
+    public bool Check_IsConsumables()
+    {
+        List<ItemCategory> cateInSpec = (from node in specs
+                                         where node.category.ToString().Contains("소모품")
+                                         select node.category).ToList();
+
+        return (cateInSpec == null || cateInSpec.Count == 0) ? false : true;
+    }
+
+    public virtual void Use_Consumables(Player user)
+    {
+
     }
 }
