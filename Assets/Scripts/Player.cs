@@ -88,9 +88,6 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
     [HideInInspector] public MeshRenderer _weaponRender { get; set; }
     #endregion
 
-    //커서 오브젝트 샘플
-    [HideInInspector] public GameObject _cursorObj;
-
     private void Awake()
     {
         baseShader = Shader.Find("Unlit/CellShader");
@@ -200,13 +197,11 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
 
         if (photonView.IsMine)
         {
-            player._cursorObj.SetActive(false);
             player._lineObj.SetActive(false);
         }
         else
         {
             _mainCamera.gameObject.SetActive(false);
-            if (_cursorObj != null) Destroy(_cursorObj.gameObject);
             if (_lineObj != null) Destroy(_lineObj.gameObject);
         }
     }
@@ -382,10 +377,15 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
             //기본 공격 타겟팅
             if (Input.GetKeyDown(KeyCode.A))
             {
+                SetIcon_TargetMouseCursor();
                 atkToggle = true;
                 StartCoroutine(IE_FollowTargetCursor());
             }
-            else if (Input.GetKeyUp(KeyCode.A)) atkToggle = false;
+            else if (Input.GetKeyUp(KeyCode.A))
+            {
+                SetIcon_IdleMouseCursor();
+                atkToggle = false;
+            }
 
             //스킬 사용 퀵버튼
             if (!ctrlPressed)
@@ -420,11 +420,9 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
         }
     }
 
-    /// <summary> 타겟팅 커서를 활성화합니다. </summary>
+    /// <summary> 타겟팅용 레이캐스트를 활성화합니다. </summary>
     IEnumerator IE_FollowTargetCursor()
     {
-        _cursorObj.SetActive(true);
-
         while(atkToggle)
         {
             //스킬 시전 중일 때에는 타겟팅 기능 일시정지
@@ -432,11 +430,6 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
 
             Ray ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
-            if (Physics.Raycast(ray, out hit, 200, LayerMask.GetMask("Default")))
-            {
-                if (hit.transform.tag.Equals("Ground"))
-                    _cursorObj.transform.position = hit.point;
-            }
 
             #region 타겟팅관련 : 다른 플레이어를 타겟팅
             if (Input.GetMouseButtonDown(0))
@@ -456,14 +449,12 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
                     targetUnit = hit.transform.GetComponent<ITargetUnit>();
                 }
 
-                break;
+                yield break;
             }
             #endregion
 
             yield return null;
         }
-
-        _cursorObj.SetActive(false);
     }
 
     /// <summary>
@@ -1264,10 +1255,9 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
     /// 인벤토리에 아이템을 삭제합니다.
     /// </summary>
     /// <param name="idx">인벤토리 슬롯 인덱스</param>
-    /// <param name="itemName">삭제할 아이템 이름</param>
-    public void RemoveItem_Inventory(int idx, string itemName)
+    public void RemoveItem_Inventory(int idx)
     {
-        ItemBase item = ItemManager.ItemDB[itemName];
+        ItemBase item = ItemManager.ItemDB[inventory[idx]];
 
         inventory[idx] = "";
 
@@ -1309,9 +1299,27 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
         _viewer.UseItem(invenIdx);
     }
 
+    /// <summary>
+    /// 아이템이 위치한 인벤토리 인덱스를 반환합니다.
+    /// 없다면 -1을 반환합니다.
+    /// </summary>
+    public int GetIndex_Inventory(string itemName)
+    {
+        for(int i = 0; i < inventory.Length; i++)
+        {
+            if(inventory[i].Equals(itemName))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
     public void Add_Money(int amount)
     {
         money += amount;
+        _viewer.Update_Money();
     }
 
     public Vector3 Get_Position()

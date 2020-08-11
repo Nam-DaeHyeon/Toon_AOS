@@ -9,5 +9,7 @@ public class Item_04_Sword : ItemBase
         Set_ChildItem(ItemManager.ItemDB["WoodenStick"], ItemManager.ItemDB["SharpMass"]);
 
         specs.Add(new ST_Ability(ItemCategory.공격력, 10));
+
+        cost = Get_ChildItemsCost() + 2;
     }
 }

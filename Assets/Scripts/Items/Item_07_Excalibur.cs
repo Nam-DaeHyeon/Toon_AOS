@@ -12,5 +12,7 @@ public class Item_07_Excalibur : ItemBase
         specs.Add(new ST_Ability(ItemCategory.공격력, 20));
         specs.Add(new ST_Ability(ItemCategory.방어력, 7));
         specs.Add(new ST_Ability(ItemCategory.마법방어력, 7));
+
+        cost = Get_ChildItemsCost() + 5;
     }
 }

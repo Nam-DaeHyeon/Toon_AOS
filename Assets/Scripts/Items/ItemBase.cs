@@ -29,10 +29,25 @@ public struct ST_Ability
 [System.Serializable]
 public class ItemBase
 {
+    /// <summary>
+    /// 해당 아이템을 필요로하는 상위 아이템
+    /// </summary>
     protected List<ItemBase> parentItem = null;
+    /// <summary>
+    /// 해당 아이템을 재료로하는 하위 아이템
+    /// </summary>
     protected ItemBase[] childItem = null;
 
+
+    /// <summary>
+    /// 아이템 세부 능력치들
+    /// </summary>
     public List<ST_Ability> specs = new List<ST_Ability>();
+
+    /// <summary>
+    /// 아이템 구매 비용
+    /// </summary>
+    public int cost;
 
     /// <summary>
     /// 부모 아이템 타입을 지정합니다.
@@ -117,8 +132,27 @@ public class ItemBase
         return (cateInSpec == null || cateInSpec.Count == 0) ? false : true;
     }
 
+    /// <summary>
+    ///  소모품을 사용합니다.
+    /// </summary>
+    /// <param name="user"></param>
     public virtual void Use_Consumables(Player user)
     {
 
+    }
+
+    public string Get_ItemName()
+    {
+        string type = GetType().ToString();
+        return type.Substring(type.LastIndexOf('_') + 1);
+    }
+
+    protected int Get_ChildItemsCost()
+    {
+        if (childItem == null) return 0;
+        int leftCost = childItem[0] != null ? childItem[0].cost : 0;
+        int rightCost = childItem[1] != null ? childItem[1].cost : 0;
+
+        return leftCost + rightCost;
     }
 }

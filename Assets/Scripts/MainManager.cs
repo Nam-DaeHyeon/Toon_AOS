@@ -33,8 +33,7 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
             return s_instance;
         }
     }
-
-    [SerializeField] GameObject cursorObjSample;
+    
     [SerializeField] GameObject lineObjSample;
 
     [Header("Prefabs")]
@@ -76,7 +75,6 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
                                                          Quaternion.Euler(0, 0, 0));
 
         owner = playerObj.GetComponent<Player>();
-        owner._cursorObj = cursorObjSample;
         owner.Set_InitLineRendererObj(lineObjSample);
 
         SetCreate_Character(GameManager.USER_CHARACTER);

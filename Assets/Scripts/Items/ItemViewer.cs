@@ -15,6 +15,7 @@ public class ItemViewer : MonoBehaviour
     [SerializeField] GameObject _playerSpecRoot;
     TMP_Text[] _playerSpec;
     TMP_Text[] _playerItems;
+    TMP_Text _playerMoney;
     Image _playerHPBar;
     TMP_Text _playerHPText;
 
@@ -40,6 +41,7 @@ public class ItemViewer : MonoBehaviour
     //상점 인벤토리
     [SerializeField] GameObject _invenSlotStoreRoot;
     TMP_Text[] _playerItemsInStore;
+    [SerializeField] TMP_Text _playerMoneyInStore;
 
     //부모 노드 아이템 슬롯 버튼 집합 (해당 아이템을 하위 재료로 두는 아이템들의 집합)
     [SerializeField] Button[] _parentSlots;
@@ -49,7 +51,15 @@ public class ItemViewer : MonoBehaviour
     //카테고리 토글 활성화 배열
     //공격력 | 마법공격력 | 방어력 | 마법방어력 | 체력 | 이동속도 | 소모품
     [SerializeField] Toggle[] _categoryToggles;
-    
+
+    //이진트리 시작 인덱스 모음
+    int[] newDepthIdxs = { 0, 1, 3, 7, 15, 31 };
+
+    /// <summary>
+    /// 하위 아이템 중 보유하고 있는 아이템이 위치한 인벤토리 인덱스 모음 리스트
+    /// </summary>
+    List<int> _carriedUndergradeItemList = new List<int>();
+
     public void SetInitAddr()
     { 
         _owner = MainManager.instance.owner;
@@ -60,6 +70,8 @@ public class ItemViewer : MonoBehaviour
         SetInit_PlayerSpecNInventory();
         SetInit_TotalSlots();
         SetInit_ClickSpecs();
+
+        Update_Money();
     }
 
     /// <summary>
@@ -96,10 +108,15 @@ public class ItemViewer : MonoBehaviour
                 _playerSpec[i] = temp[i];
             }
             //체력바 (텍스트)
-            else if(i == temp.Length - 1)
+            else if(i == temp.Length - 2)
             {
                 _playerHPText = temp[i];
                 _playerHPBar = _playerHPText.transform.parent.GetComponent<Image>();
+            }
+            //보유 재화
+            else if(i==temp.Length - 1)
+            {
+                _playerMoney = temp[i];
             }
             else
             {
@@ -248,7 +265,6 @@ public class ItemViewer : MonoBehaviour
 
         _childSlots[0].gameObject.SetActive(true);
         Array.Resize(ref _childSlots, list.Length);
-        int[] newDepthIdxs = { 0, 1, 3, 7, 15, 31 };
         int currD = 1;
         for (int i = 1; i < _childSlots.Length; i++)
         {
@@ -379,6 +395,7 @@ public class ItemViewer : MonoBehaviour
     //뷰어를 활성화합니다.
     public void UI_ButtonClick_ViewerOpen()
     {
+        if (_storeWindow.activeInHierarchy) _storeWindow.SetActive(false);
         //transform.GetChild(1).gameObject.SetActive(true);
         _storeWindow.SetActive(true);
     }
@@ -388,40 +405,61 @@ public class ItemViewer : MonoBehaviour
     {
         _storeWindow.SetActive(false);
     }
-    
-    //전체 항목 뷰어에서 아이템을 클릭했습니다.
+
+    /// <summary>
+    /// 전체 항목 뷰어에서 아이템을 클릭했습니다.
+    /// </summary>
     public void UI_ButtonClick_ItemSlotInTotal(int btnIdx)
     {
         string itemName = _totalSlots[btnIdx].GetComponentInChildren<TMP_Text>().text;
 
-        Update_PurchaseButton(true);
+        //하위 아이템 보유 여부에 따라 최종 구매 비용 측정
+        int cost = Calculate_UndergradeCost(itemName);
+
+        Update_PurchaseButton(true, cost);
         Set_DetailViewer(itemName);
     }
 
-    //아이템 세부 뷰어에서 트리에 표기된 아이템을 클릭했습니다.
+    /// <summary>
+    /// 아이템 세부 뷰어에서 트리에 표기된 아이템을 클릭했습니다.
+    /// </summary>
     public void UI_ButtonClick_ItemSlotInTree(TMP_Text btnAttr)
     {
         if (btnAttr.text.Trim().Equals("") || btnAttr.text == null) return;
-        
-        Update_PurchaseButton(true);
+
+        //하위 아이템 보유 여부에 따라 최종 구매 비용 측정
+        int cost = Calculate_UndergradeCost(btnAttr.text);
+
+        Update_PurchaseButton(true, cost);
         Set_DetailViewer(btnAttr.text);
     }
 
-    //아이템 세부 뷰어에서 부모 배열에 표기된 아이템을 클릭했습니다.
+    /// <summary>
+    /// 아이템 세부 뷰어에서 부모 배열에 표기된 아이템을 클릭했습니다.
+    /// </summary>
     public void UI_ButtonClick_ItemSlotInParentArray(TMP_Text btnAttr)
     {
         if (btnAttr.text.Trim().Equals("") || btnAttr.text == null) return;
 
-        Update_PurchaseButton(true);
+        //하위 아이템 보유 여부에 따라 최종 구매 비용 측정
+        int cost = Calculate_UndergradeCost(btnAttr.text);
+
+        Update_PurchaseButton(true, cost);
         Set_DetailViewer(btnAttr.text);
     }
 
-    //상점 UI에 있는 인벤토리의 아이템을 클릭했습니다.
+    /// <summary>
+    /// 상점 UI에 있는 인벤토리의 아이템을 클릭했습니다.
+    /// 아이템을 팔 수 있습니다.
+    /// </summary>
     public void UI_ButtonClick_ItemSlotInInventory(TMP_Text btnAttr)
     {
         if (btnAttr.text.Trim().Equals("") || btnAttr.text == null) return;
 
-        Update_PurchaseButton(false);
+        //판매는 해당 아이템이 원 구매비용의 절반으로 측정한다.
+        int cost = (int)(ItemManager.ItemDB[btnAttr.text].cost * 0.5f);
+
+        Update_PurchaseButton(false, cost);
         Set_DetailViewer(btnAttr.text);
     }
 
@@ -429,17 +467,12 @@ public class ItemViewer : MonoBehaviour
     /// 클릭한 아이템의 상호작용 버튼 속성을 구매(true)로 설정합니다.
     /// </summary>
     /// <param name="purchase">구매 true : 판매 false</param>
-    private void Update_PurchaseButton(bool purchase)
+    /// <param name="cost">최종 구매/판매 비용</param>
+    private void Update_PurchaseButton(bool purchase, int cost)
     {
         //보유 아이템을 클릭했으니 판매 기능을 수행하도록한다.
         _clickedItemButton.text = purchase ? "구매" : "판매";
-        int cost = 0;
 
-        //선택한 아이템의 보유 여부에 따라 구매 비용 측정
-        if (purchase)
-        {
-
-        }
         _clickedItemButton.text += " " + cost;
 
     }
@@ -498,18 +531,39 @@ public class ItemViewer : MonoBehaviour
     //선택한 아이템의 보유 여부에 따라 구매 / 판매를 합니다.
     public void UI_ButtonClick_PurchaseItem()
     {
+        int cost = 0;
+
+        string costStr = _clickedItemButton.text;
+        costStr = costStr.Replace(costStr.Substring(0, 2), "");
+
+        cost = int.Parse(costStr.Trim());
+
+        //구매 옵션일 때 보유 재화량이 부족하면 리턴
+        if (_clickedItemButton.text.Contains("구매"))
+        {
+            if (_owner.money < cost) return;
+        }
+            
+
         //선택한 아이템 이름 호출
         string itemName = _childSlots[0].GetComponentInChildren<TMP_Text>().text;
 
         //소모품 여부 확인
         if(ItemManager.ItemDB[itemName].Check_IsConsumables())
         {
-            PurchaseItem_Consumables(itemName);
+            PurchaseItem_Consumables(itemName, cost);
             return;
         }
 
         if (_clickedItemButton.text.Contains("구매"))
         {
+            //하위 아이템이 존재할 경우 아이템을 삭제한다.
+            for(int i = 0; i < _carriedUndergradeItemList.Count; i++)
+            {
+                if (_carriedUndergradeItemList[i] == -1) continue;
+                _owner.RemoveItem_Inventory(_carriedUndergradeItemList[i]);
+            }
+
             for(int i = 0; i< _owner.inventory.Length; i++)
             {
                 //빈 슬롯에 아이템 추가
@@ -524,6 +578,8 @@ public class ItemViewer : MonoBehaviour
                     break;
                 }
             }
+
+            _owner.money -= cost;
         }
         else if (_clickedItemButton.text.Contains("판매"))
         {
@@ -534,30 +590,47 @@ public class ItemViewer : MonoBehaviour
                 {
                     //판매완료 : 슬롯에서 제거
                     //_owner.inventory[i] = "";   //플레이어 인벤토리 데이터
-                    _owner.RemoveItem_Inventory(i, itemName);   //플레이어 인벤토리 데이터
+                    _owner.RemoveItem_Inventory(i);   //플레이어 인벤토리 데이터
                     _playerItems[i].text = _owner.inventory[i]; //상시 스펙 뷰어 인벤토리 UI
                     _playerItemsInStore[i].text = _playerItems[i].text; //상점 인벤토리 UI
 
                     //버튼 속성 변환
-                    Update_PurchaseButton(true);
+                    Update_PurchaseButton(true, ItemManager.ItemDB[itemName].cost);
 
                     break;
                 }
             }
+
+            _owner.money += cost;
         }
 
+        //플레이어 능력치 갱신
         Update_PlayerSpec();
+
+        //하위 아이템 보유 관련해서 비용 재계산한다. 그리고 버튼 정보를 수정한다.
+        cost = Calculate_UndergradeCost(itemName);
+        Update_PurchaseButton(true, cost);
     }
 
-    private void PurchaseItem_Consumables(string itemName)
+    private int Calculate_UndergradeCost(string itemName)
+    {
+        _carriedUndergradeItemList.Clear();
+        int cost = Get_ItemCost(itemName);
+
+        return cost;
+    }
+
+    private void PurchaseItem_Consumables(string itemName, int cost)
     {
         if (_clickedItemButton.text.Contains("구매"))
         {
             AddCount_Consumables(itemName);
+            _owner.money -= cost;
         }
         else if (_clickedItemButton.text.Contains("판매"))
         {
             SubstractCount_Consumables(itemName);
+            _owner.money += cost;
         }
     }
 
@@ -624,11 +697,11 @@ public class ItemViewer : MonoBehaviour
                 {
                     //판매완료 : 슬롯에서 제거
                     //_owner.inventory[i] = "";   //플레이어 인벤토리 데이터
-                    _owner.RemoveItem_Inventory(i, itemName);   //플레이어 인벤토리 데이터
+                    _owner.RemoveItem_Inventory(i);   //플레이어 인벤토리 데이터
                     _playerItems[i].text = _owner.inventory[i]; //상시 스펙 뷰어 인벤토리 UI
 
                     //버튼 속성 변환
-                    Update_PurchaseButton(true);
+                    Update_PurchaseButton(true, ItemManager.ItemDB[itemName].cost);
                 }
                 else
                 {
@@ -660,5 +733,74 @@ public class ItemViewer : MonoBehaviour
         SubstractCount_Consumables(itemName);
     }
 
+    /// <summary>
+    /// 플레이어의 보유 재화를 UI에 동기화 표시합니다.
+    /// </summary>
+    public void Update_Money()
+    {
+        if (_owner == null) return;
+        _playerMoney.text = "Gold " + _owner.money.ToString();
+        _playerMoneyInStore.text = "Gold " + _owner.money.ToString();
+    }
+
+
     #endregion
+
+    /// <summary>
+    /// 해당 아이템의 최종 구매 비용을 반환합니다. 하위 아이템의 보유 여부를 확인하고 구매비용을 차감합니다.
+    /// </summary>
+    private int Get_ItemCost(string itemName)
+    {
+        ItemBase item = ItemManager.ItemDB[itemName];
+        int endCost = item.cost;
+
+        //위 아이템의 보유 여부를 확인하고 구매비용을 차감합니다.
+        if (item.Get_ChildNode(0) != null)
+        {
+            Item_BST bst = new Item_BST();
+            bst.ChildNodeTraversal(item);
+            ItemBase[] arr = bst.Get_Array();
+
+            for (int i = 1; i < arr.Length; i++)
+            {
+                if (arr[i] == null)
+                {
+                    //자식 노드들 NULL 값으로 변환
+                    SetNull_NearChildNode(ref bst, i);
+
+                    continue;
+                }
+
+                if (_owner.inventory.Contains(arr[i].Get_ItemName()))
+                {
+                    endCost -= arr[i].cost;
+
+                    //자식 노드들 NULL 값으로 변환
+                    SetNull_NearChildNode(ref bst, i);
+                    
+                    _carriedUndergradeItemList.Add(_owner.GetIndex_Inventory(arr[i].Get_ItemName()));
+                }
+            }
+        }
+
+        return endCost;
+    }
+
+    /// <summary>
+    /// 가까운 자식 노드들을 반환합니다.
+    /// </summary>
+    /// <returns></returns>
+    private void SetNull_NearChildNode(ref Item_BST bst, int nodeIndex)
+    {
+        //Left Node
+        if (nodeIndex * 2 + 1 < bst.Get_Array().Length)
+        {
+            bst.Get_Array()[nodeIndex * 2 + 1] = null;
+        }
+        //Right Node
+        if (nodeIndex * 2 + 2 < bst.Get_Array().Length)
+        {
+            bst.Get_Array()[nodeIndex * 2 + 2] = null;
+        }
+    }
 }

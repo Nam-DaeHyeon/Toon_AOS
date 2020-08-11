@@ -10,5 +10,7 @@ public class Item_05_Staff : ItemBase
 
         specs.Add(new ST_Ability(ItemCategory.마법공격력, 5));
         specs.Add(new ST_Ability(ItemCategory.체력, 20));
+
+        cost = Get_ChildItemsCost() + 3;
     }
 }

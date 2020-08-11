@@ -297,5 +297,41 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
             yield return null;
         }
     }
+
+    /// <summary>
+    /// 일반 공격 타겟팅 커서 아이콘을 설정합니다.
+    /// </summary>
+    private void SetIcon_TargetMouseCursor()
+    {
+        StartCoroutine(IE_SetIcon_MouseCursor("MouseCursorIcons/Targeting"));
+    }
+
+    /// <summary>
+    /// 기본 커서 아이콘을 설정합니다.
+    /// </summary>
+    private void SetIcon_IdleMouseCursor()
+    {
+        StartCoroutine(IE_SetIcon_MouseCursor(null));
+    }
+
+    private IEnumerator IE_SetIcon_MouseCursor(string path)
+    {
+        yield return new WaitForEndOfFrame();
+
+        if (path == null)
+        {
+            Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+            yield break;
+        }
+
+        Texture2D newTex = Resources.Load(path) as Texture2D;
+
+        float _x = newTex.width * 0.5f;
+        float _y = newTex.height * 0.5f;
+
+        Vector2 pivot = new Vector2(_x, _y);
+        Cursor.SetCursor(newTex, pivot, CursorMode.Auto);
+    }
+
 }
 
