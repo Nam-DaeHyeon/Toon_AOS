@@ -299,6 +299,17 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable
     }
 
     /// <summary>
+    /// 상세 능력치가 표시된 창의 HP 값을 갱신합니다.
+    /// </summary>
+    private void SetUpdate_ViewerHP()
+    {
+        if (!photonView.IsMine) return; 
+        if (_viewer == null) return;
+
+        _viewer.Update_PlayerSpecHp();
+    }
+
+    /// <summary>
     /// 일반 공격 타겟팅 커서 아이콘을 설정합니다.
     /// </summary>
     private void SetIcon_TargetMouseCursor()

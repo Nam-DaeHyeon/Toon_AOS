@@ -36,6 +36,9 @@ public class LobbyManager : MonoBehaviourPunCallbacks
         _nickNameInputField.text = GameManager.USER_NICKNAME;
         //_nickNameInputField.text = PhotonNetwork.NickName;
         _characterText.text = GameManager.USER_CHARACTER;
+
+
+        SoundManager.instance.Play_BGM("Lobby");
     }
 
     //마스터 서버에 접속이 성공했다.
@@ -88,8 +91,9 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     public void UI_Button_Join()
     {
         _joinButton.interactable = false;
+        SoundManager.instance.Play_SE("ClickButton");
 
-        if(PhotonNetwork.IsConnected)
+        if (PhotonNetwork.IsConnected)
         {
             _gameLogText.text = "Connecting to Random Room...";
 
@@ -118,5 +122,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks
         PlayerPrefs.SetString("CHARACTER", GameManager.USER_CHARACTER);
 
         _characterText.text = GameManager.USER_CHARACTER;
+
+        SoundManager.instance.Play_SE("ClickButton");
     }
 }

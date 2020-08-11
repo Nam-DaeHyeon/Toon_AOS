@@ -243,6 +243,9 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
     {
         Transform target = PhotonView.Find(viewId).transform;
         if (target == null) return;
+        
+        //밀리는 대상이 아닐 경우 RPC 중지
+        if (owner.GetComponent<PhotonView>().ViewID != viewId) return;
 
         StartCoroutine(IE_SkillFunc_PushTarget(original, target, distance, lerpSpeed, duration));
     }

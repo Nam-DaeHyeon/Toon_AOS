@@ -125,7 +125,9 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
             SetInitAddr_ItemViewer();
 
             photonView.RPC("CallbackRPC_InitParameter", RpcTarget.AllBuffered, photonView.ViewID, GameManager.USER_CHARACTER);
-            _viewer.Update_PlayerSpecHp();
+            SetUpdate_ViewerHP();
+
+            SetIcon_IdleMouseCursor();
 
             StartCoroutine(IE_BaseController());
             StartCoroutine(IE_PlayerInputKeyManager());
@@ -377,13 +379,11 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
             //기본 공격 타겟팅
             if (Input.GetKeyDown(KeyCode.A))
             {
-                SetIcon_TargetMouseCursor();
                 atkToggle = true;
                 StartCoroutine(IE_FollowTargetCursor());
             }
             else if (Input.GetKeyUp(KeyCode.A))
             {
-                SetIcon_IdleMouseCursor();
                 atkToggle = false;
             }
 
@@ -423,7 +423,9 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
     /// <summary> 타겟팅용 레이캐스트를 활성화합니다. </summary>
     IEnumerator IE_FollowTargetCursor()
     {
-        while(atkToggle)
+        SetIcon_TargetMouseCursor();
+
+        while (atkToggle)
         {
             //스킬 시전 중일 때에는 타겟팅 기능 일시정지
             yield return new WaitUntil(() => !_myState.Equals(PLAYER_STATE.CAST));
@@ -449,12 +451,14 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
                     targetUnit = hit.transform.GetComponent<ITargetUnit>();
                 }
 
-                yield break;
+                break;
             }
             #endregion
 
             yield return null;
         }
+        
+        SetIcon_IdleMouseCursor();
     }
 
     /// <summary>
@@ -717,7 +721,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
         int endDamage = (int)damage;
         photonView.RPC("CallbackRPC_SyncHP", RpcTarget.All, endDamage, false);
 
-        _viewer.Update_PlayerSpecHp();
+        SetUpdate_ViewerHP();
     }
 
     /// <summary>
@@ -733,7 +737,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
         int endDamage = (int)damage;
         photonView.RPC("CallbackRPC_SyncHP", RpcTarget.All, endDamage, true);
 
-        _viewer.Update_PlayerSpecHp();
+        SetUpdate_ViewerHP();
     }
 
     /// <summary>
@@ -747,7 +751,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
         int endAmount = -1 * (int)healAmount;
         photonView.RPC("CallbackRPC_SyncHP", RpcTarget.All, endAmount, true);
 
-        _viewer.Update_PlayerSpecHp();
+        SetUpdate_ViewerHP();
     }
 
     public void TakeDamage_IgnoreDefence(float damage)
@@ -756,7 +760,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
 
         photonView.RPC("CallbackRPC_SyncHPIgnoreDefence", RpcTarget.All, photonView.ViewID, damage);
 
-        _viewer.Update_PlayerSpecHp();
+        SetUpdate_ViewerHP();
     }
 
     /// <summary>

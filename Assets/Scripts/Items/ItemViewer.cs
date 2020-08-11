@@ -562,6 +562,8 @@ public class ItemViewer : MonoBehaviour
             {
                 if (_carriedUndergradeItemList[i] == -1) continue;
                 _owner.RemoveItem_Inventory(_carriedUndergradeItemList[i]);
+                _playerItems[_carriedUndergradeItemList[i]].text = _owner.inventory[i]; //상시 스펙 뷰어 인벤토리 UI
+                _playerItemsInStore[_carriedUndergradeItemList[i]].text = _playerItems[i].text; //상점 인벤토리 UI
             }
 
             for(int i = 0; i< _owner.inventory.Length; i++)
@@ -606,6 +608,7 @@ public class ItemViewer : MonoBehaviour
 
         //플레이어 능력치 갱신
         Update_PlayerSpec();
+        Update_PlayerSpecHp();
 
         //하위 아이템 보유 관련해서 비용 재계산한다. 그리고 버튼 정보를 수정한다.
         cost = Calculate_UndergradeCost(itemName);
