@@ -416,6 +416,14 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
             if (Input.GetKeyDown(KeyCode.Alpha5)) UseItem_Inventory(4);
             if (Input.GetKeyDown(KeyCode.Alpha6)) UseItem_Inventory(5);
 
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                MainManager.instance.OpenClose_OptionWindow();
+
+                //Back To Lobby
+                //PhotonNetwork.LeaveRoom();
+                //UnityEngine.SceneManagement.SceneManager.LoadScene(0);
+            }
             yield return null;
         }
     }

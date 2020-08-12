@@ -47,16 +47,5 @@ public class GameManager : MonoBehaviour
         //GET PLAYERPREFS "CHARACTER"
         if (!PlayerPrefs.HasKey("CHARACTER")) PlayerPrefs.SetString("CHARACTER", "BEAR");
         USER_CHARACTER = PlayerPrefs.GetString("CHARACTER");
-    }
-
-    private void Update()
-    {
-        if(Input.GetKeyDown(KeyCode.P))
-        {
-            for (int i = 0; i < Photon.Pun.PhotonNetwork.PhotonViews.Length; i++)
-            {
-                Debug.Log(Photon.Pun.PhotonNetwork.PhotonViews[i].name + " : " + Photon.Pun.PhotonNetwork.PhotonViews[i].ViewID);
-            }
-        }
-    }
+    } 
 }

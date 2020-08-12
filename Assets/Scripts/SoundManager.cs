@@ -2,23 +2,57 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[System.Serializable]
 public class SoundManager : MonoBehaviour
 {
     [SerializeField] AudioSource _bgmSource;
     [SerializeField] AudioSource _seSource;
-
-    [HideInInspector] public float bgmVolume;
-    [HideInInspector] public float seVolume;
+    
+    [HideInInspector] public float bgmVolume = 1;
+    [HideInInspector] public float seVolume = 1;
 
     Dictionary<string, AudioClip> _bgmClips;
     Dictionary<string, AudioClip> _seClips;
 
-    public static SoundManager instance;
-    private void Awake()
-    {
-        instance = this;
+    /// <summary>
+    /// BGM 볼륨 보정 비율
+    /// </summary>
+    float _bgmVolumeCorr = 0.2f;
 
-        SetInitAddr_SoundResources();
+    public static SoundManager s_instance;
+    public static SoundManager instance
+    {
+        get
+        {
+            if (!s_instance)
+            {
+                s_instance = FindObjectOfType(typeof(SoundManager)) as SoundManager;
+                if (!s_instance)
+                {
+                    Debug.LogError("GameManager s_instance null");
+                    return null;
+                }
+            }
+
+            return s_instance;
+        }
+    }
+
+    void Awake()
+    {
+        if (s_instance == null)
+        {
+            s_instance = this;
+
+            DontDestroyOnLoad(this);
+
+            SetInitAddr_SoundResources();
+
+        }
+        else if (this != s_instance)
+        {
+            Destroy(gameObject);
+        }
     }
 
     /// <summary>
@@ -29,16 +63,21 @@ public class SoundManager : MonoBehaviour
         _bgmClips = new Dictionary<string, AudioClip>();
         _seClips = new Dictionary<string, AudioClip>();
 
+        bgmVolume = 1;
+        seVolume = 1;
+        _bgmSource.volume = bgmVolume * _bgmVolumeCorr;
+        _seSource.volume = seVolume;
+
         var objTemp = Resources.LoadAll("Sound/BGM/");
-        foreach(var item in objTemp)
+        foreach (var item in objTemp)
         {
-            _bgmClips.Add(item.ToString(), item as AudioClip);
+            _bgmClips.Add(item.name, item as AudioClip);
         }
 
         objTemp = Resources.LoadAll("Sound/SE/");
-        foreach(var item in objTemp)
+        foreach (var item in objTemp)
         {
-            _seClips.Add(item.ToString(), item as AudioClip);
+            _seClips.Add(item.name, item as AudioClip);
         }
     }
 
@@ -61,5 +100,17 @@ public class SoundManager : MonoBehaviour
     public void Play_SE(string seName)
     {
         _seSource.PlayOneShot(_seClips[seName], seVolume);
+    }
+    
+    public void SetVolume_BGM(float vol)
+    {
+        bgmVolume = vol;
+        _bgmSource.volume = bgmVolume * _bgmVolumeCorr;
+    }
+
+    public void SetVolume_SE(float vol)
+    {
+        seVolume = vol;
+        _seSource.volume = seVolume;
     }
 }

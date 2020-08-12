@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
 using TMPro;
+using UnityEngine.UI;
 
 public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
 {
@@ -14,44 +15,18 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
     [SerializeField] GameObject _logPrefab;
     [SerializeField] int _logPoolCount = 10;
     Queue<GameObject> _logPool;
-
-    public static MainManager s_instance;
-    public static MainManager instance
-    {
-        get
-        {
-            if (!s_instance)
-            {
-                s_instance = FindObjectOfType(typeof(MainManager)) as MainManager;
-                if (!s_instance)
-                {
-                    Debug.LogError("MainManager s_instance null");
-                    return null;
-                }
-            }
-
-            return s_instance;
-        }
-    }
     
     [SerializeField] GameObject lineObjSample;
+
+    [SerializeField] GameObject _optionWindow;
 
     [Header("Prefabs")]
     [SerializeField] GameObject _playerPrefab;
 
+    public static MainManager instance;
     private void Awake()
     {
-        if (s_instance == null)
-        {
-            s_instance = this;
-
-            DontDestroyOnLoad(this);
-
-        }
-        else if (this != s_instance)
-        {
-            Destroy(gameObject);
-        }
+        instance = this;
     }
 
     private void Start()
@@ -317,5 +292,42 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
     {
         if (_logPool == null) _logPool = new Queue<GameObject>();
         _logPool.Enqueue(item);
+    }
+
+    /// <summary>
+    /// Option UI : 배경음 볼륨을 조절합니다. 
+    /// </summary>
+    public void UI_Slider_ModifyBGMVolume(Slider slider)
+    {
+        SoundManager.instance.SetVolume_BGM(slider.value);
+    }
+    
+    /// <summary>
+    /// Option UI : 효과음 볼륨을 조절합니다. 
+    /// </summary>
+    public void UI_Slider_ModifySFXVolume(Slider slider)
+    {
+        SoundManager.instance.SetVolume_SE(slider.value);
+    }
+
+    /// <summary>
+    /// 옵션창을 열거나 닫습니다.
+    /// </summary>
+    public void OpenClose_OptionWindow()
+    {
+        if (_optionWindow.activeInHierarchy) _optionWindow.SetActive(false);
+        else _optionWindow.SetActive(true);
+    }
+
+    public void UI_ButtonClick_OptionBackToLobby()
+    {
+        PhotonNetwork.LeaveRoom();
+        UnityEngine.SceneManagement.SceneManager.LoadScene(0);
+    }
+
+    public void UI_ButtonClick_OptionGameQuit()
+    {
+        PhotonNetwork.LeaveRoom();
+        Application.Quit();
     }
 }
