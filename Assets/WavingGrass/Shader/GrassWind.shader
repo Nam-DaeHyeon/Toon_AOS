@@ -27,6 +27,10 @@ Shader "Custom/GrassWind" {
                 "DisableBatching" = "True"
             }
 
+		Stencil {
+			Ref 1
+			Comp equal
+		}
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag

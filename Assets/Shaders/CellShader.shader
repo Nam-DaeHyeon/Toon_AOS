@@ -15,6 +15,10 @@
 		//Tags { "RenderType" = "Opaque" }
 		Tags { "RenderType" = "Transparent" }
 
+		Stencil {
+			Ref 1
+			Comp equal
+		}
 		cull front    //! 1Pass는 앞면을 그리지 않는다.
 		Pass
 		{
