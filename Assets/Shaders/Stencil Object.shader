@@ -62,8 +62,8 @@ sampler2D _MainTex;
 		void surf(Input IN, inout SurfaceOutputStandard o) {
 			// Albedo comes from a texture tinted by color
 			fixed4 c = tex2D(_MainTex, IN.uv_MainTex) * _Color;
-			//o.Albedo = c.rgb;
-			o.Emission = c.rgb * 0.5f;
+			o.Albedo = c.rgb;
+			//o.Emission = c.rgb * 0.5f;
 			o.Alpha = c.a;
 		}
 		ENDCG

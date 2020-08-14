@@ -236,7 +236,8 @@ public class PlayerProjectile : MonoBehaviourPun
                 if (!_setSkill.Check_IsMagicDamage()) colplayer.TakeDamage(_setSkill.Get_EffectiveDamage() + owner.Get_AttackDamage());
                 else colplayer.TakeMDamage(_setSkill.Get_EffectiveMagicDamage() + owner.Get_MAttackDamage());
 
-                if (colplayer.Get_CurrentHP() <= 0) owner.Add_Money(5);
+                //if (colplayer.Get_CurrentHP() <= 0) owner.Add_Money(5);
+                if (colplayer.Check_IsDead()) owner.Add_Money(colplayer.Get_TargetCredit());
             }
         }
         else if(colMonster != null)
@@ -250,7 +251,8 @@ public class PlayerProjectile : MonoBehaviourPun
                 if(!_setSkill.Check_IsMagicDamage()) colMonster.TakeDamage(_setSkill.Get_EffectiveDamage() + owner.Get_AttackDamage());
                 else colMonster.TakeMDamage(_setSkill.Get_EffectiveMagicDamage() + owner.Get_MAttackDamage());
 
-                if (colMonster.Get_CurrentHP() <= 0) owner.Add_Money(3);
+                //if (colMonster.Get_CurrentHP() <= 0) owner.Add_Money(3);
+                if (colMonster.Check_IsDead()) owner.Add_Money(colMonster.Get_TargetCredit());
             }
         }
     }
@@ -289,6 +291,9 @@ public class PlayerProjectile : MonoBehaviourPun
 
             if (!_setSkill.Check_IsMagicDamage()) colMonster.TakeDamage(_setSkill.Get_EffectiveDamage() + owner.Get_AttackDamage());
             else colMonster.TakeMDamage(_setSkill.Get_EffectiveMagicDamage() + owner.Get_MAttackDamage());
+
+            if (colMonster.Check_IsDead()) owner.Add_Money(colMonster.Get_TargetCredit());
+
             myOption = PROJECTILE_OPTION.투사체충돌발생;
         }
         //나머지는 맵과 충돌한 경우..

@@ -454,13 +454,17 @@ public class ItemViewer : MonoBehaviour
     /// </summary>
     public void UI_ButtonClick_ItemSlotInInventory(TMP_Text btnAttr)
     {
-        if (btnAttr.text.Trim().Equals("") || btnAttr.text == null) return;
+        string itemName = btnAttr.text;
+        if (itemName.Trim().Equals("") || itemName == null) return;
+
+        //소모품인지 확인
+        if (itemName.Contains('×')) itemName = itemName.Substring(0, itemName.IndexOf('×'));
 
         //판매는 해당 아이템이 원 구매비용의 절반으로 측정한다.
-        int cost = (int)(ItemManager.ItemDB[btnAttr.text].cost * 0.5f);
+        int cost = (int)(ItemManager.ItemDB[itemName].cost * 0.5f);
 
         Update_PurchaseButton(false, cost);
-        Set_DetailViewer(btnAttr.text);
+        Set_DetailViewer(itemName);
     }
 
     /// <summary>
@@ -563,7 +567,7 @@ public class ItemViewer : MonoBehaviour
                 if (_carriedUndergradeItemList[i] == -1) continue;
                 _owner.RemoveItem_Inventory(_carriedUndergradeItemList[i]);
                 _playerItems[_carriedUndergradeItemList[i]].text = _owner.inventory[i]; //상시 스펙 뷰어 인벤토리 UI
-                _playerItemsInStore[_carriedUndergradeItemList[i]].text = _playerItems[i].text; //상점 인벤토리 UI
+                _playerItemsInStore[_carriedUndergradeItemList[i]].text = _playerItems[_carriedUndergradeItemList[i]].text; //상점 인벤토리 UI
             }
 
             for(int i = 0; i< _owner.inventory.Length; i++)

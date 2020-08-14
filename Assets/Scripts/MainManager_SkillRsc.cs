@@ -113,9 +113,6 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
     /// <param name="parentTr">이펙트의 부모 Default Null</param>
     public void SetActive_SkillEffect(string skillKeyName, Transform skillTr, Transform parentTr = null)
     {
-        //tempObj.SetActive(true);
-        //ParticleSystem particle = tempObj.GetComponent<ParticleSystem>();
-        //if (particle != null) particle.Play();
         string fullKeyName = PhotonNetwork.LocalPlayer.UserId + PhotonNetwork.LocalPlayer.ActorNumber + skillKeyName;
         if (parentTr != null)
         {
@@ -182,10 +179,8 @@ public partial class MainManager : MonoBehaviourPunCallbacks, IPunObservable
     {
         GameObject tempObj = (skillPool.ContainsKey(fullKeyName)) ? skillPool[fullKeyName] : effectPool[fullKeyName];
         if (tempObj == null) return;
-
-        //tempObj.transform.position = new Vector3(skillPos.x, tempObj.transform.position.y, skillPos.z);
+        
         tempObj.transform.position = skillPos;
-        //tempObj.transform.eulerAngles = Vector3.zero;
         float tempx = tempObj.transform.eulerAngles.x;
 
         if (tempObj.transform.eulerAngles.x + tempObj.transform.eulerAngles.y + tempObj.transform.eulerAngles.z != 0)

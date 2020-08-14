@@ -22,7 +22,7 @@ public class sk_Rabbit02_Heal : Skill
         //...
 
         //애니메이션
-        player.SetAnimTrigger("IDLE");
+        //player.SetAnimTrigger("IDLE");
 
         //부가 기능 구현
         player.TakeHeal(mdamage[skillLevel - 1]);

@@ -34,6 +34,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
     Vector3 _targetPos;
 
     #region 플레이어 능력치 파라미터
+    PLAYER_STATE _prevState;
     PLAYER_STATE _myState = PLAYER_STATE.IDLE;
 
     int _level = 1;
@@ -76,7 +77,6 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
     Coroutine[] meleeCoroutine = new Coroutine[3];
     int meleeIndex = 0;
     [SerializeField] PlayerProjectile[] _projectiles;   //스킬 프로젝타일
-    public Coroutine runningSkillRoutine { get; set; }
     #endregion
 
     #region 컴포넌트
@@ -130,8 +130,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
 
             SetIcon_IdleMouseCursor();
 
-            StartCoroutine(IE_BaseController());
             StartCoroutine(IE_PlayerInputKeyManager());
+            StartCoroutine(IE_PlayerInputKeyManagerWithoutHP());
         }
 
         m_ready = true;
@@ -183,7 +183,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
         isInvincible = false;
 
         //컨트롤러 스테이트 초기화
-        player._myState = PLAYER_STATE.IDLE;
+        //player._myState = PLAYER_STATE.IDLE;
 
         //트리거 & 변수 초기화
         player.isMove = false;
@@ -201,6 +201,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
         if (photonView.IsMine)
         {
             player._lineObj.SetActive(false);
+            Set_StateMachine(PLAYER_STATE.IDLE);
         }
         else
         {
@@ -225,7 +226,9 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
     /// </summary>
     public void Set_StateMachine(PLAYER_STATE nextState)
     {
+        _prevState = _myState;
         _myState = nextState;
+
         if (_currHP <= 0) _myState = PLAYER_STATE.DEAD;
 
         switch(nextState)
@@ -345,8 +348,9 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
             if (delay <= 0)
             {
                 //공격 후 공격 범위에 있다면 공격을 지속하고, 아니라면 기본 컨트롤러로 상태를 변환한다.
+                //또는 상대가 죽었다면 공격을 중지한다.
                 distance = Vector3.Distance(targetUnit.Get_Position(), transform.position);
-                if (distance > _attackDistance)
+                if (distance > _attackDistance || targetUnit.Check_IsDead())
                 {
                     targetUnit = null;
                     Set_StateMachine(PLAYER_STATE.IDLE);
@@ -418,6 +422,17 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
             if (Input.GetKeyDown(KeyCode.Alpha5)) UseItem_Inventory(4);
             if (Input.GetKeyDown(KeyCode.Alpha6)) UseItem_Inventory(5);
 
+            yield return null;
+        }
+    }
+
+    /// <summary>
+    /// 플레이어 키입력을 받습니다. 체력과 관계없이 항상 동작합니다.
+    /// </summary>
+    IEnumerator IE_PlayerInputKeyManagerWithoutHP()
+    {
+        while(true)
+        {
             if (Input.GetKeyDown(KeyCode.Escape))
             {
                 MainManager.instance.OpenClose_OptionWindow();
@@ -426,6 +441,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
                 //PhotonNetwork.LeaveRoom();
                 //UnityEngine.SceneManagement.SceneManager.LoadScene(0);
             }
+
             yield return null;
         }
     }
@@ -628,6 +644,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
         {
             targetUnit.Set_Target(this);
             targetUnit.TakeDamage(_attackDamage);
+            if (targetUnit.Check_IsDead()) Add_Money(targetUnit.Get_TargetCredit());
         }
         //원거리 공격일 경우 등록해둔 밀리프로젝타일 풀을 돌려가며 사용한다.
         else
@@ -681,6 +698,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
         {
             tempTarget.Set_Target(this);
             tempTarget.TakeDamage(_attackDamage);
+            if (tempTarget.Check_IsDead()) Add_Money(tempTarget.Get_TargetCredit());
         }
         MainManager.instance.Set_ActiveProjectile(misslie.gameObject, false);
         // _meleeProjectile[index].gameObject.SetActive(false);
@@ -815,7 +833,8 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
         }
 
         //회복하는 경우(음수)와 단순히 신호를 보내는 경우(0)를 제외한 피해를 받은 경우만 텍스트 로그를 출력한다.
-        if (tempDamage > 0) MainManager.instance.SetVisible_HitLog(transform.position, tempDamage);
+        //잔량 실드가 없을 경우 포함
+        if (tempDamage > 0 && _currSP <= 0) MainManager.instance.SetVisible_HitLog(transform.position, tempDamage);
 
         _currHP -= tempDamage;
         _imgHPBar.fillAmount = _currHP / _maxHP;
@@ -884,6 +903,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
 
     public float Get_CurrentHP()
     {
+        if (_currHP < 0) _currHP = 0;
         return _currHP;
     }
 
@@ -1354,5 +1374,15 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
     public Transform Get_Transform()
     {
         return transform;
+    }
+
+    public bool Check_IsDead()
+    {
+        return _currHP < 0;
+    }
+
+    public int Get_TargetCredit()
+    {
+        return 5;
     }
 }

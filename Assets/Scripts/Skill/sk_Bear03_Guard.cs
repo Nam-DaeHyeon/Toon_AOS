@@ -6,12 +6,26 @@ public class sk_Bear03_Guard : Skill
 {
     public override int[] damage { get; set; } = { 40, 50, 60, 70, 80 };
     public override float duration { get; set; } = 3f;
+
+    float timer = 0;
+    
     /// <summary>
     /// 쉴드를 생성한다. 쉴드량은 Damage를 참조한다.
     /// </summary>
     /// <returns></returns>
     public override IEnumerator IE_SkillProcess()
     {
+        if(coroutinerigger)
+        {
+            player.Set_MaxShield(damage[skillLevel - 1]);   //실드량 초기화
+            timer = duration;   //지속시간 초기화
+            MainManager.instance.SetActive_SkillEffect("Guard", player._animator.transform, player.transform);  //스킬 이펙트 (재)시작
+
+            yield break;
+        }
+
+        coroutinerigger = true;
+
         //return base.IE_SkillProcess();
 
         //시선 보정
@@ -30,7 +44,7 @@ public class sk_Bear03_Guard : Skill
 
         //yield return new WaitForSeconds(3F);
 
-        float timer = duration;
+        timer = duration;
         while(timer > 0f)
         {
             timer -= Time.deltaTime;
@@ -44,6 +58,8 @@ public class sk_Bear03_Guard : Skill
 
         //후 이펙트
         MainManager.instance.SetUnActive_SkillEffect("Guard");
+
+        coroutinerigger = false;
     }
 
     public override string Get_FullDescription()

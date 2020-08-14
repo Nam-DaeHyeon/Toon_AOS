@@ -13,4 +13,7 @@ interface ITargetUnit
 
     void Set_Target(Player attacker);
     Transform Get_Transform();
+
+    bool Check_IsDead();
+    int Get_TargetCredit();
 }

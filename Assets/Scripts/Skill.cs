@@ -48,6 +48,11 @@ public class Skill : MonoBehaviourPun
     internal Player player;
     internal Vector3 targetPos;
 
+    /// <summary>
+    /// 지속시간이 있는 스킬의 경우 코루틴 동작 여부를 확인해 다른 작업을 수행시킨다.
+    /// </summary>
+    internal bool coroutinerigger;
+
     private void Awake()
     {
         //player = GetComponentInParent<Player>();  //씬에 분리했으니 추가적인 처리가 필요
@@ -87,8 +92,7 @@ public class Skill : MonoBehaviourPun
     {
         this.targetPos = player.transform.position;
 
-        if(player.runningSkillRoutine != null) StopCoroutine(player.runningSkillRoutine);
-        player.runningSkillRoutine = StartCoroutine(IE_SkillProcess());
+        StartCoroutine(IE_SkillProcess());
     }
     
     /// <summary>

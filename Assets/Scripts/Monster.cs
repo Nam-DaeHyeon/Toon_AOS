@@ -148,10 +148,10 @@ public class Monster : MonoBehaviourPun, ITargetUnit
         yield return new WaitForSeconds(1.5f);
 
         _targetPlayer.TakeDamage(_attackDamage);
-        
+
         _agent.isStopped = false;
 
-        if (_targetPlayer.Get_CurrentHP() <= 0||
+        if (_targetPlayer.Check_IsDead()||
             Vector3.Distance(transform.position, _spwnPos) >= _detectDistance * 3f)
         {
             Set_StateMachine(MONSTER_STATE.RETURN);
@@ -200,6 +200,8 @@ public class Monster : MonoBehaviourPun, ITargetUnit
 
         int endDamage = (int)damage;
         photonView.RPC("CallbackRPC_SyncHP", RpcTarget.All, endDamage, false);
+
+        
     }
 
     /// <summary>
@@ -271,6 +273,7 @@ public class Monster : MonoBehaviourPun, ITargetUnit
             if (_currHP <= 0)
             {
                 attacker.Add_Money(3);
+                Set_StateMachine(MONSTER_STATE.DEAD);
                 yield break;
             }
 
@@ -341,5 +344,15 @@ public class Monster : MonoBehaviourPun, ITargetUnit
     public Transform Get_Transform()
     {
         return transform;
+    }
+
+    public bool Check_IsDead()
+    {
+        return _currHP <= 0;
+    }
+
+    public int Get_TargetCredit()
+    {
+        return 10;
     }
 }

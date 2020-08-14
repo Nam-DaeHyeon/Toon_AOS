@@ -6,7 +6,7 @@ public class sk_Bear04_Frenzy : Skill
 {
     public override int[] damage { get; set; } = { 25, 30, 35 };
     public override float duration { get; set; } = 10f;
-
+    
     public override int Get_MaxLevel()
     {
         return 3;
@@ -18,6 +18,9 @@ public class sk_Bear04_Frenzy : Skill
     /// <returns></returns>
     public override IEnumerator IE_SkillProcess()
     {
+        if (coroutinerigger) yield break;
+        coroutinerigger = true;
+
         //return base.IE_SkillProcess();
 
         //시선 보정
@@ -53,6 +56,8 @@ public class sk_Bear04_Frenzy : Skill
         //상태 변환
 
         //콜라이더 OFF
+
+        coroutinerigger = false;
     }
 
     public override string Get_FullDescription()
