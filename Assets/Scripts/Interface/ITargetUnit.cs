@@ -12,4 +12,5 @@ interface ITargetUnit
     Vector3 Get_Position();
 
     void Set_Target(Player attacker);
+    Transform Get_Transform();
 }

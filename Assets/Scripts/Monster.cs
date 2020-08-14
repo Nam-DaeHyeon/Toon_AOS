@@ -338,4 +338,8 @@ public class Monster : MonoBehaviourPun, ITargetUnit
         return transform.position;
     }
 
+    public Transform Get_Transform()
+    {
+        return transform;
+    }
 }

@@ -86,6 +86,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
     [HideInInspector] public Animator _animator { get; set; }
     [HideInInspector] public SkinnedMeshRenderer _skinRender { get; set; }
     [HideInInspector] public MeshRenderer _weaponRender { get; set; }
+    [SerializeField] GameObject _stencilMaskObj;
     #endregion
 
     private void Awake()
@@ -205,6 +206,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
         {
             _mainCamera.gameObject.SetActive(false);
             if (_lineObj != null) Destroy(_lineObj.gameObject);
+            _stencilMaskObj.SetActive(false);
         }
     }
 
@@ -657,28 +659,30 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
         Vector3 dir;
 
         yield return new WaitForEndOfFrame();
-        _meleeProjectile[index].transform.position = transform.position + Vector3.up;
+        Transform misslie = _meleeProjectile[index];
+        misslie.transform.position = transform.position + Vector3.up;
+        ITargetUnit tempTarget = targetUnit; //타겟 지정
         MainManager.instance.Set_ActiveProjectile(_meleeProjectile[index].gameObject, true);
         //_meleeProjectile[index].gameObject.SetActive(true);
 
         do
         {
-            if (targetUnit == null) break;
-            subDistance = Vector3.Distance(targetUnit.Get_Position(), new Vector3(_meleeProjectile[index].transform.position.x, targetUnit.Get_Position().y, _meleeProjectile[index].transform.position.z));
+            if (tempTarget == null) break;
+            subDistance = Vector3.Distance(tempTarget.Get_Position(), new Vector3(misslie.transform.position.x, tempTarget.Get_Position().y, misslie.transform.position.z));
 
-            dir = targetUnit.Get_Position() - new Vector3(_meleeProjectile[index].transform.position.x, targetUnit.Get_Position().y, _meleeProjectile[index].transform.position.z);
+            dir = tempTarget.Get_Position() - new Vector3(misslie.transform.position.x, tempTarget.Get_Position().y, misslie.transform.position.z);
             dir.Normalize();
-            _meleeProjectile[index].Translate(dir * _speed * Time.deltaTime, Space.World);
+            misslie.transform.Translate(dir * _speed * Time.deltaTime, Space.World);
 
             yield return null;
         } while (subDistance >= 0.1f);
 
-        if (targetUnit != null)
+        if (tempTarget != null)
         {
-            targetUnit.Set_Target(this);
-            targetUnit.TakeDamage(_attackDamage);
+            tempTarget.Set_Target(this);
+            tempTarget.TakeDamage(_attackDamage);
         }
-        MainManager.instance.Set_ActiveProjectile(_meleeProjectile[index].gameObject, false);
+        MainManager.instance.Set_ActiveProjectile(misslie.gameObject, false);
         // _meleeProjectile[index].gameObject.SetActive(false);
         //_meleeProjectile.parent = _animator.transform;
     }
@@ -1345,5 +1349,10 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
     public void Set_Target(Player attacker)
     {
         return;
+    }
+
+    public Transform Get_Transform()
+    {
+        return transform;
     }
 }

@@ -581,7 +581,8 @@ public class ItemViewer : MonoBehaviour
                 }
             }
 
-            _owner.money -= cost;
+            //_owner.money -= cost;
+            _owner.Add_Money(-cost);
         }
         else if (_clickedItemButton.text.Contains("판매"))
         {
@@ -603,7 +604,8 @@ public class ItemViewer : MonoBehaviour
                 }
             }
 
-            _owner.money += cost;
+            //_owner.money += cost;
+            _owner.Add_Money(cost);
         }
 
         //플레이어 능력치 갱신
@@ -628,12 +630,14 @@ public class ItemViewer : MonoBehaviour
         if (_clickedItemButton.text.Contains("구매"))
         {
             AddCount_Consumables(itemName);
-            _owner.money -= cost;
+            //_owner.money -= cost;
+            _owner.Add_Money(-cost);
         }
         else if (_clickedItemButton.text.Contains("판매"))
         {
             SubstractCount_Consumables(itemName);
-            _owner.money += cost;
+            //_owner.money += cost;
+            _owner.Add_Money(cost);
         }
     }
 
