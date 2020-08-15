@@ -1067,8 +1067,6 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
     {
         _skinRender.material.shader = alphaShader;
         _weaponRender.material.shader = alphaShader;
-        //_weaponRender.material.SetColor("_Color", new Color(1, 1, 1, 0));
-        //_skinRender.sharedMaterial.SetColor("_Color", new Color32(255, 255, 255, 110));
 
         Player hidePlayer = PhotonView.Find(playerId).GetComponent<Player>();
         if(bushId != -1) hidePlayer._currBush = PhotonView.Find(bushId).GetComponent<BushGrass>();
@@ -1083,15 +1081,12 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
         //뒤늦게 들어온 애가 있을 경우 전에 들어온 친구한테 렌더링되도록 업데이트.. allPlayers로 해결...
         else
         {
-            //if (MainManager.instance.allPlayers == null) return;
             Player[] allPlayers = GameObject.FindObjectsOfType<Player>();
 
             //같은 부쉬에 있는 플레이어의 경우 생략
-            //for (int i = 0; i < MainManager.instance.allPlayers.Length; i++)
             for (int i = 0; i < allPlayers.Length; i++)
             {
                 //자신(this) & NULL 예외처리
-                //if (MainManager.instance.allPlayers[i].Equals(this)) continue;
                 if (allPlayers[i].Equals(this)) continue;
                 if (_currBush == null || !_currBush.Equals(allPlayers[i]._currBush))
                 {

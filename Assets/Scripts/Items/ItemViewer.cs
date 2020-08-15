@@ -516,18 +516,10 @@ public class ItemViewer : MonoBehaviour
         }
 
         //특정 토글이 클릭되있다면, 해당 조건으로 아이템 정렬
-        
-
         var liqq = from item in ItemManager.ItemDB
-
-                   //where item.Value.CheckLINQ_Category((ItemCategory)Enum.Parse(typeof(ItemCategory), clickNode))
+                   
                    where item.Value.CheckLINQ_Category(checkedCate)
                    select item.Value;
-
-        foreach(var node in liqq.ToArray())
-        {
-            Debug.Log("Sorted Item List : " + node);
-        }
 
         Update_TotalSlot(liqq.ToArray());
     }
