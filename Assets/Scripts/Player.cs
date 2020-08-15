@@ -201,6 +201,7 @@ public partial class Player : MonoBehaviourPunCallbacks, IPunObservable, ITarget
         if (photonView.IsMine)
         {
             player._lineObj.SetActive(false);
+            _viewer.Update_PlayerSpec();
             Set_StateMachine(PLAYER_STATE.IDLE);
         }
         else
